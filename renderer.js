@@ -16,16 +16,16 @@ const outputDiv = document.getElementById('output');
 const saveOutputButton = document.getElementById('save-output');
 const saveMessage = document.getElementById('save-message');
 
+let scanning = false;
+let paused = false;
+let scanData = {};
+
 for (let i = 3; i <= 16; i++) {
   const option = document.createElement('option');
   option.value = i;
   option.text = i;
   usernameLengthSelect.appendChild(option);
 }
-
-let scanning = false;
-let paused = false;
-let scanData = {};
 
 function checkUsername() {
   const username = usernameInput.value.trim();
@@ -40,7 +40,6 @@ function checkUsername() {
   errorMessage.textContent = "";
   outputDiv.innerHTML = "";
 
-  // Use your Railway-hosted CORS proxy to bypass CORS issues
   const proxyUrl = "https://web-production-787c.up.railway.app/";
   const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
 
@@ -65,27 +64,138 @@ function checkUsername() {
 
 checkButton.addEventListener('click', checkUsername);
 
-// Add other scan-related functions here (launchScan, pauseScan, stopScan, etc.) as in previous examples.
-
-function saveOutput() {
-  const content = outputDiv.innerText;
-  if (content.trim() === '') {
-    saveMessage.textContent = 'Textbox is empty. Nothing to save.';
-    saveMessage.style.color = 'red';
-    return;
+// Helper function to generate all possible usernames for a given length
+function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
+  let chars = [];
+  if (includeLetters) chars = chars.concat('abcdefghijklmnopqrstuvwxyz'.split(''));
+  if (includeNumbers) chars = chars.concat('0123456789'.split(''));
+  if (includeUnderscore) chars.push('_');
+  
+  // Return early if no characters are allowed
+  if (chars.length === 0) {
+    errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
+    return [];
   }
-  const currentTime = new Date();
-  const filename = currentTime.toISOString().replace(/[:.]/g, '-') + '_Output.txt';
-  const fileBlob = new Blob([content], { type: 'text/plain' });
 
-  const downloadLink = document.createElement('a');
-  downloadLink.href = URL.createObjectURL(fileBlob);
-  downloadLink.download = filename;
-  downloadLink.click();
+  const usernames = [];
 
-  saveMessage.textContent = 'Output saved to file!';
-  saveMessage.style.color = 'green';
+  function helper(prefix, depth) {
+    if (depth === 0) {
+      usernames.push(prefix);
+      return;
+    }
+    for (let i = 0; i < chars.length; i++) {
+      helper(prefix + chars[i], depth - 1);
+    }
+  }
+
+  helper('', length);
+  return usernames;
 }
 
-saveOutputButton.addEventListener('click', saveOutput);
+// Scan function to iterate over possible usernames
+function launchScan() {
+  const includeLetters = includeLettersCheckbox.checked;
+  const includeNumbers = includeNumbersCheckbox.checked;
+  const includeUnderscore = includeUnderscoreCheckbox.checked;
+  const length = parseInt(usernameLengthSelect.value);
 
+  if (!includeLetters && !includeNumbers && !includeUnderscore) {
+    errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
+    return;
+  }
+
+  const usernames = generateUsernames(length, includeLetters, includeNumbers, includeUnderscore);
+  scanData = {
+    usernames,
+    total: usernames.length,
+    scanned: 0,
+    startTime: Date.now()
+  };
+
+  outputDiv.innerHTML = '';
+  progressBarInner.style.width = '0%';
+  progressText.textContent = `0/${scanData.total}`;
+
+  scanning = true;
+  paused = false;
+
+  scanNextUsername();
+}
+
+// Function to handle each username lookup during the scan
+function scanNextUsername() {
+  if (!scanning || paused || scanData.scanned >= scanData.total) {
+    return;
+  }
+
+  const username = scanData.usernames[scanData.scanned];
+  const proxyUrl = "https://web-production-787c.up.railway.app/";
+  const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
+
+  fetch(proxyUrl + apiUrl)
+    .then((response) => {
+      if (response.status === 204) return null;
+      return response.json();
+    })
+    .then((data) => {
+      if (data && data.id) {
+        outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
+      } else {
+        outputDiv.innerHTML += `<span>${username} is available</span><br>`;
+      }
+      scanData.scanned++;
+
+      // Update progress bar
+      const progress = (scanData.scanned / scanData.total) * 100;
+      progressBarInner.style.width = `${progress}%`;
+      progressText.textContent = `${scanData.scanned}/${scanData.total}`;
+
+      // Calculate estimated time remaining
+      const elapsedTime = (Date.now() - scanData.startTime) / 1000;
+      const estimatedTotalTime = (elapsedTime / scanData.scanned) * scanData.total;
+      const estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
+      estimatedTimeLabel.textContent = `Estimated time: ${formatTime(estimatedTimeRemaining)}`;
+      
+      scanNextUsername();
+    })
+    .catch((error) => {
+      outputDiv.innerHTML += `<span>Error checking ${username}: ${error}</span><br>`;
+      scanNextUsername();
+    });
+}
+
+// Helper function to format time in minutes/seconds
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const sec = Math.floor(seconds % 60);
+  return `${minutes}m ${sec}s`;
+}
+
+// Pause and stop functions
+function pauseScan() {
+  paused = true;
+  pauseScanButton.textContent = 'Resume';
+}
+
+function resumeScan() {
+  paused = false;
+  pauseScanButton.textContent = 'Pause';
+  scanNextUsername();
+}
+
+pauseScanButton.addEventListener('click', () => {
+  if (paused) resumeScan();
+  else pauseScan();
+});
+
+function stopScan() {
+  scanning = false;
+  progressBarInner.style.width = '0%';
+  progressText.textContent = '0/0';
+  estimatedTimeLabel.textContent = 'Estimated time: 0m 0s';
+}
+
+stopScanButton.addEventListener('click', stopScan);
+
+launchScanButton.addEventListener('click', launchScan);
