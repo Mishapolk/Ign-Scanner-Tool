@@ -3,27 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic-Tac-Toe</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Minecraft Username Checker</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Tic-Tac-Toe Game</h1>
-        <div class="board">
-            <div class="cell" id="cell-0" onclick="makeMove(0)"></div>
-            <div class="cell" id="cell-1" onclick="makeMove(1)"></div>
-            <div class="cell" id="cell-2" onclick="makeMove(2)"></div>
-            <div class="cell" id="cell-3" onclick="makeMove(3)"></div>
-            <div class="cell" id="cell-4" onclick="makeMove(4)"></div>
-            <div class="cell" id="cell-5" onclick="makeMove(5)"></div>
-            <div class="cell" id="cell-6" onclick="makeMove(6)"></div>
-            <div class="cell" id="cell-7" onclick="makeMove(7)"></div>
-            <div class="cell" id="cell-8" onclick="makeMove(8)"></div>
+        <h1>Minecraft Username Checker</h1>
+        <div class="input-section">
+            <label for="username">Enter Minecraft Username:</label>
+            <input type="text" id="username" name="username">
+            <button id="single-check-btn" onclick="checkUsername()">Check Username</button>
         </div>
-        <p id="status">Player X's turn</p>
-        <button onclick="resetGame()">Restart Game</button>
+
+        <div class="control-section">
+            <button id="start-scan" onclick="startScan()">Start Scan</button>
+            <button id="pause-resume-scan" onclick="pauseResumeScan()" disabled>Pause</button>
+            <button id="stop-scan" onclick="stopScan()" disabled>Stop</button>
+        </div>
+
+        <div id="estimated-time" class="status-text">Estimated time: 0m 0s</div>
+        <div id="progress-section">
+            <progress id="progress-bar" value="0" max="100"></progress>
+            <div id="progress-text">0/0</div>
+        </div>
+
+        <div id="output" class="output-section"></div>
+        <div id="error" class="error-text"></div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
