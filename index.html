@@ -10,26 +10,28 @@
   <div class="container">
     <!-- Top Section -->
     <div class="section">
-      <label for="username">Enter Minecraft Username:</label>
-      <input type="text" id="username" maxlength="16" placeholder="Enter Minecraft Username">
-      <button id="check-username">Check Username</button>
-      <span id="error-message" class="error-message"></span>
+      <div class="options-left">
+        <label for="username-length">Username Length:</label>
+        <select id="username-length"></select>
+
+        <label><input type="checkbox" id="search-claimed"> Search for claimed usernames</label>
+        <label><input type="checkbox" id="include-letters" checked> Include letters</label>
+        <label><input type="checkbox" id="include-numbers"> Include numbers</label>
+        <label><input type="checkbox" id="include-underscore"> Include _</label>
+      </div>
+
+      <div class="buttons-right">
+        <button id="launch-scan">Launch Scan</button>
+        <button id="pause-scan" disabled>Pause</button>
+        <button id="stop-scan">Stop Scan</button>
+      </div>
     </div>
-    
-    <!-- Scan Settings -->
+
+    <!-- Estimated Time -->
     <div class="section">
-      <label><input type="checkbox" id="search-claimed"> Search for claimed usernames</label>
-      <label for="username-length">Username Length:</label>
-      <select id="username-length"></select>
-      <label><input type="checkbox" id="include-letters" checked> Include letters</label>
-      <label><input type="checkbox" id="include-numbers"> Include numbers</label>
-      <label><input type="checkbox" id="include-underscore"> Include _</label>
-      <button id="launch-scan">Launch Scan</button>
-      <button id="pause-scan" disabled>Pause</button>
-      <button id="stop-scan">Stop Scan</button>
       <span id="estimated-time" class="estimated-time">Estimated time: 0h 0m 0s</span>
     </div>
-    
+
     <!-- Progress Bar -->
     <div class="section">
       <div class="progress-bar">
