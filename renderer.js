@@ -64,33 +64,28 @@ function checkUsername() {
 
 checkButton.addEventListener('click', checkUsername);
 
-// Helper function to generate all possible usernames for a given length
-function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
-  let chars = [];
-  if (includeLetters) chars = chars.concat('abcdefghijklmnopqrstuvwxyz'.split(''));
-  if (includeNumbers) chars = chars.concat('0123456789'.split(''));
-  if (includeUnderscore) chars.push('_');
-  
-  // Return early if no characters are allowed
-  if (chars.length === 0) {
-    errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
-    return [];
-  }
-
-  const usernames = [];
-
-  function helper(prefix, depth) {
-    if (depth === 0) {
-      usernames.push(prefix);
-      return;
-    }
-    for (let i = 0; i < chars.length; i++) {
-      helper(prefix + chars[i], depth - 1);
-    }
-  }
-
-  helper('', length);
-  return usernames;
+// Helper function for retrying API requests on rate limiting or failure
+function fetchWithRetry(url, retries = 5, delay = 1000) {
+  return new Promise((resolve, reject) => {
+    fetch(url)
+      .then((response) => {
+        if (response.status === 204) return resolve(null);
+        return response.json();
+      })
+      .then((data) => {
+        if (data && data.errorMessage === "Couldn't find any profile with name") {
+          resolve(data); // Username not found
+        } else if (data && data.id) {
+          resolve(data); // Username claimed
+        } else {
+          reject('Rate limit or error'); // Not a valid response, retry
+        }
+      })
+      .catch(() => {
+        if (retries === 0) reject('Failed after retries');
+        else setTimeout(() => resolve(fetchWithRetry(url, retries - 1, delay)), delay);
+      });
+  });
 }
 
 // Scan function to iterate over possible usernames
@@ -125,51 +120,50 @@ function launchScan() {
 
 // Function to handle each username lookup during the scan
 function scanNextUsername() {
-  if (!scanning || paused || scanData.scanned >= scanData.total) {
-    return;
-  }
+  if (!scanning || paused || scanData.scanned >= scanData.total) return;
 
   const username = scanData.usernames[scanData.scanned];
   const proxyUrl = "https://web-production-787c.up.railway.app/";
   const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
 
-  fetch(proxyUrl + apiUrl)
-    .then((response) => {
-      if (response.status === 204) return null;
-      return response.json();
-    })
+  fetchWithRetry(proxyUrl + apiUrl)
     .then((data) => {
       if (data && data.id) {
         outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
-      } else {
+      } else if (data === null) {
         outputDiv.innerHTML += `<span>${username} is available</span><br>`;
+      } else {
+        outputDiv.innerHTML += `<span>Error checking ${username}: ${data.errorMessage}</span><br>`;
       }
+
       scanData.scanned++;
-
-      // Update progress bar
-      const progress = (scanData.scanned / scanData.total) * 100;
-      progressBarInner.style.width = `${progress}%`;
-      progressText.textContent = `${scanData.scanned}/${scanData.total}`;
-
-      // Calculate estimated time remaining
-      const elapsedTime = (Date.now() - scanData.startTime) / 1000;
-      const estimatedTotalTime = (elapsedTime / scanData.scanned) * scanData.total;
-      const estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
-      estimatedTimeLabel.textContent = `Estimated time: ${formatTime(estimatedTimeRemaining)}`;
-      
-      scanNextUsername();
+      updateProgress(); // Update progress bar and estimated time
+      scanNextUsername(); // Continue scanning
     })
     .catch((error) => {
       outputDiv.innerHTML += `<span>Error checking ${username}: ${error}</span><br>`;
-      scanNextUsername();
+      scanNextUsername(); // Retry next username if failed after retries
     });
 }
 
-// Helper function to format time in minutes/seconds
+function updateProgress() {
+  const progress = (scanData.scanned / scanData.total) * 100;
+  progressBarInner.style.width = `${progress}%`;
+  progressText.textContent = `${scanData.scanned}/${scanData.total}`;
+
+  // Calculate estimated time remaining
+  const elapsedTime = (Date.now() - scanData.startTime) / 1000;
+  const estimatedTotalTime = (elapsedTime / scanData.scanned) * scanData.total;
+  const estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
+  estimatedTimeLabel.textContent = `Estimated time: ${formatTime(estimatedTimeRemaining)}`;
+}
+
+// Helper function to format time in hours, minutes, and seconds
 function formatTime(seconds) {
-  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
   const sec = Math.floor(seconds % 60);
-  return `${minutes}m ${sec}s`;
+  return `${hours}h ${minutes}m ${sec}s`;
 }
 
 // Pause and stop functions
@@ -193,9 +187,61 @@ function stopScan() {
   scanning = false;
   progressBarInner.style.width = '0%';
   progressText.textContent = '0/0';
-  estimatedTimeLabel.textContent = 'Estimated time: 0m 0s';
+  estimatedTimeLabel.textContent = 'Estimated time: 0h 0m 0s';
 }
 
 stopScanButton.addEventListener('click', stopScan);
 
 launchScanButton.addEventListener('click', launchScan);
+
+// Helper function to generate all possible usernames for a given length
+function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
+  let chars = [];
+  if (includeLetters) chars = chars.concat('abcdefghijklmnopqrstuvwxyz'.split(''));
+  if (includeNumbers) chars = chars.concat('0123456789'.split(''));
+  if (includeUnderscore) chars.push('_');
+  
+  // Return early if no characters are allowed
+  if (chars.length === 0) {
+    errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
+    return [];
+  }
+
+  const usernames = [];
+
+  function helper(prefix, depth) {
+    if (depth === 0) {
+      usernames.push(prefix);
+      return;
+    }
+    for (let i = 0; i < chars.length; i++) {
+      helper(prefix + chars[i], depth - 1);
+    }
+  }
+
+  helper('', length);
+  return usernames;
+}
+
+// Saving output to file
+function saveOutput() {
+  const content = outputDiv.innerText;
+  if (content.trim() === '') {
+    saveMessage.textContent = 'Textbox is empty. Nothing to save.';
+    saveMessage.style.color = 'red';
+    return;
+  }
+  const currentTime = new Date();
+  const filename = currentTime.toISOString().replace(/[:.]/g, '-') + '_Output.txt';
+  const fileBlob = new Blob([content], { type: 'text/plain' });
+
+  const downloadLink = document.createElement('a');
+  downloadLink.href = URL.createObjectURL(fileBlob);
+  downloadLink.download = filename;
+  downloadLink.click();
+
+  saveMessage.textContent = 'Output saved to file!';
+  saveMessage.style.color = 'green';
+}
+
+saveOutputButton.addEventListener('click', saveOutput);
