@@ -20,10 +20,14 @@ let scanning = false;
 let paused = false;
 let scanData = {};
 
-for (let i = 3; i <= 16; i++) {
+// Populate username length options (including 1 and 2)
+for (let i = 1; i <= 16; i++) {
   const option = document.createElement('option');
   option.value = i;
   option.text = i;
+  if (i === 3) {
+    option.selected = true;  // Default selection
+  }
   usernameLengthSelect.appendChild(option);
 }
 
@@ -51,10 +55,10 @@ function checkUsername() {
       return response.json();
     })
     .then((data) => {
-      if (data && data.id) {
+      if (data && data.errorMessage === "Couldn't find any profile with name") {
+        outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
+      } else if (data && data.id) {
         outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
-      } else {
-        outputDiv.innerHTML += `<span>Couldn't find any profile with name ${username}</span><br>`;
       }
     })
     .catch((error) => {
@@ -74,11 +78,11 @@ function fetchWithRetry(url, retries = 5, delay = 1000) {
       })
       .then((data) => {
         if (data && data.errorMessage === "Couldn't find any profile with name") {
-          resolve(data); // Username not found
+          resolve(data);  // Username available
         } else if (data && data.id) {
-          resolve(data); // Username claimed
+          resolve(data);  // Username claimed
         } else {
-          reject('Rate limit or error'); // Not a valid response, retry
+          reject('Rate limit or error');  // Retry
         }
       })
       .catch(() => {
@@ -128,21 +132,18 @@ function scanNextUsername() {
 
   fetchWithRetry(proxyUrl + apiUrl)
     .then((data) => {
-      if (data && data.id) {
+      if (data && data.errorMessage === "Couldn't find any profile with name") {
+        outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
+      } else if (data && data.id) {
         outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
-      } else if (data === null) {
-        outputDiv.innerHTML += `<span>${username} is available</span><br>`;
-      } else {
-        outputDiv.innerHTML += `<span>Error checking ${username}: ${data.errorMessage}</span><br>`;
       }
-
       scanData.scanned++;
-      updateProgress(); // Update progress bar and estimated time
-      scanNextUsername(); // Continue scanning
+      updateProgress();
+      scanNextUsername();  // Continue scanning
     })
     .catch((error) => {
       outputDiv.innerHTML += `<span>Error checking ${username}: ${error}</span><br>`;
-      scanNextUsername(); // Retry next username if failed after retries
+      scanNextUsername();  // Retry next username
     });
 }
 
@@ -201,7 +202,6 @@ function generateUsernames(length, includeLetters, includeNumbers, includeUnders
   if (includeNumbers) chars = chars.concat('0123456789'.split(''));
   if (includeUnderscore) chars.push('_');
   
-  // Return early if no characters are allowed
   if (chars.length === 0) {
     errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
     return [];
