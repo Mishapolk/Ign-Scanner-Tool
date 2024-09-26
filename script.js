@@ -16,6 +16,7 @@ const statusDisplay = document.getElementById('status');
 
 function handleResultValidation() {
     let roundWon = false;
+    let winningCombination = null;
     for (let i = 0; i <= 7; i++) {
         const winCondition = winningConditions[i];
         let a = board[winCondition[0]];
@@ -26,6 +27,7 @@ function handleResultValidation() {
         }
         if (a === b && b === c) {
             roundWon = true;
+            winningCombination = winCondition;
             break;
         }
     }
@@ -33,6 +35,7 @@ function handleResultValidation() {
     if (roundWon) {
         statusDisplay.innerHTML = `Player ${currentPlayer} has won!`;
         isGameActive = false;
+        highlightWinningTiles(winningCombination);
         return;
     }
 
@@ -43,6 +46,12 @@ function handleResultValidation() {
     }
 
     changePlayer();
+}
+
+function highlightWinningTiles(winningCombination) {
+    winningCombination.forEach(index => {
+        document.getElementById(`cell-${index}`).classList.add('win');
+    });
 }
 
 function changePlayer() {
@@ -63,5 +72,8 @@ function resetGame() {
     isGameActive = true;
     currentPlayer = 'X';
     statusDisplay.innerHTML = `Player X's turn`;
-    document.querySelectorAll('.cell').forEach(cell => cell.innerHTML = '');
+    document.querySelectorAll('.cell').forEach(cell => {
+        cell.innerHTML = '';
+        cell.classList.remove('win');
+    });
 }
