@@ -1,3 +1,4 @@
+// DOM elements
 const usernameInput = document.getElementById('username');
 const checkButton = document.getElementById('check-username');
 const errorMessage = document.getElementById('error-message');
@@ -20,17 +21,16 @@ let scanning = false;
 let paused = false;
 let scanData = {};
 
-// Populate username length options (including 1 and 2)
+// Populate username length options (1 to 16, default to 3)
 for (let i = 1; i <= 16; i++) {
   const option = document.createElement('option');
   option.value = i;
   option.text = i;
-  if (i === 3) {
-    option.selected = true;  // Default selection
-  }
+  if (i === 3) option.selected = true;
   usernameLengthSelect.appendChild(option);
 }
 
+// Check single username lookup
 function checkUsername() {
   const username = usernameInput.value.trim();
   if (username.length > 16) {
@@ -48,12 +48,7 @@ function checkUsername() {
   const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
 
   fetch(proxyUrl + apiUrl)
-    .then((response) => {
-      if (response.status === 204) {
-        return null;
-      }
-      return response.json();
-    })
+    .then((response) => response.json())
     .then((data) => {
       if (data && data.errorMessage === "Couldn't find any profile with name") {
         outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
@@ -138,7 +133,7 @@ function scanNextUsername() {
         outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
       }
       scanData.scanned++;
-      updateProgress();
+      updateProgress();  // Update progress bar and estimated time
       scanNextUsername();  // Continue scanning
     })
     .catch((error) => {
