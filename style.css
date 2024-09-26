@@ -16,25 +16,11 @@ body {
   margin-bottom: 20px;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-}
-
-.options-left {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  max-width: 50%;
-}
-
-.buttons-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  flex: 1;
+  align-items: center;
 }
 
 label {
-  margin-bottom: 10px;
+  margin-right: 10px;
   font-size: 1.1em;
 }
 
@@ -55,7 +41,7 @@ button {
   font-size: 1em;
   border-radius: 5px;
   cursor: pointer;
-  margin-bottom: 10px;
+  margin-right: 10px;
 }
 
 button:hover {
@@ -115,7 +101,7 @@ input[type="checkbox"] {
 select {
   padding: 8px;
   font-size: 1em;
-  margin-bottom: 10px;
+  margin-right: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
 }
