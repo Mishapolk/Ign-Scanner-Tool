@@ -1,352 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Minecraft Username Checker</title>
-    <style>
-        body {
-            background-color: #2b2b2b;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            padding: 20px;
-            max-width: 1300px;
-            margin: 0 auto;
-        }
-        .section {
-            margin-bottom: 20px;
-        }
-        label {
-            margin-right: 10px;
-        }
-        input, select, button {
-            margin-right: 10px;
-        }
-        button {
-            padding: 5px 10px;
-        }
-        .progress-bar {
-            width: 90%;
-            background-color: #444;
-            border-radius: 5px;
-            overflow: hidden;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 10px;
-        }
-        .progress-bar-inner {
-            height: 20px;
-            background-color: #00cc00;
-            width: 0%;
-        }
-        .progress-text {
-            display: inline-block;
-            vertical-align: middle;
-            width: 10%;
-        }
-        .output {
-            width: 100%;
-            height: 300px;
-            background-color: #1e1e1e;
-            color: #ffffff;
-            overflow-y: scroll;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        .error-message {
-            color: red;
-        }
-        .success-message {
-            color: green;
-        }
-        .estimated-time {
-            color: #ffffff;
-            margin-left: 10px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft Username Checker</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Top Section -->
-        <div class="section">
-            <label for="username">Enter Minecraft Username:</label>
-            <input type="text" id="username" maxlength="16">
-            <button id="check-username">Check Username</button>
-            <span id="error-message" class="error-message"></span>
-        </div>
-        <!-- Scan Settings -->
-        <div class="section">
-            <label><input type="checkbox" id="search-claimed"> Search for claimed usernames</label>
-            <label for="username-length">Username Length:</label>
-            <select id="username-length">
-                <!-- Options will be added by JavaScript -->
-            </select>
-            <label><input type="checkbox" id="include-letters" checked> Include letters</label>
-            <label><input type="checkbox" id="include-numbers"> Include numbers</label>
-            <label><input type="checkbox" id="include-underscore"> Include _</label>
-            <button id="launch-scan">Launch Scan</button>
-            <button id="pause-scan" disabled>Pause</button>
-            <button id="stop-scan">Stop Scan</button>
-            <span id="estimated-time" class="estimated-time">Estimated time: 0m 0s</span>
-        </div>
-        <!-- Progress Bar -->
-        <div class="section">
-            <div class="progress-bar">
-                <div class="progress-bar-inner" id="progress-bar-inner"></div>
-            </div>
-            <span id="progress-text" class="progress-text">0/0</span>
-        </div>
-        <!-- Output -->
-        <div class="section">
-            <div class="output" id="output"></div>
-        </div>
-        <!-- Save Button -->
-        <div class="section">
-            <button id="save-output">Save Output to File</button>
-            <span id="save-message"></span>
-        </div>
+  <div class="container">
+    <!-- Top Section -->
+    <div class="section">
+      <label for="username">Enter Minecraft Username:</label>
+      <input type="text" id="username" maxlength="16">
+      <button id="check-username">Check Username</button>
+      <span id="error-message" class="error-message"></span>
     </div>
-    <script>
-        var usernameInput = document.getElementById('username');
-        var checkButton = document.getElementById('check-username');
-        var errorMessage = document.getElementById('error-message');
-        var searchClaimedCheckbox = document.getElementById('search-claimed');
-        var usernameLengthSelect = document.getElementById('username-length');
-        var includeLettersCheckbox = document.getElementById('include-letters');
-        var includeNumbersCheckbox = document.getElementById('include-numbers');
-        var includeUnderscoreCheckbox = document.getElementById('include-underscore');
-        var launchScanButton = document.getElementById('launch-scan');
-        var pauseScanButton = document.getElementById('pause-scan');
-        var stopScanButton = document.getElementById('stop-scan');
-        var estimatedTimeLabel = document.getElementById('estimated-time');
-        var progressBarInner = document.getElementById('progress-bar-inner');
-        var progressText = document.getElementById('progress-text');
-        var outputDiv = document.getElementById('output');
-        var saveOutputButton = document.getElementById('save-output');
-        var saveMessage = document.getElementById('save-message');
+    
+    <!-- Scan Settings -->
+    <div class="section">
+      <label><input type="checkbox" id="search-claimed"> Search for claimed usernames</label>
+      <label for="username-length">Username Length:</label>
+      <select id="username-length"></select>
+      <label><input type="checkbox" id="include-letters" checked> Include letters</label>
+      <label><input type="checkbox" id="include-numbers"> Include numbers</label>
+      <label><input type="checkbox" id="include-underscore"> Include _</label>
+      <button id="launch-scan">Launch Scan</button>
+      <button id="pause-scan" disabled>Pause</button>
+      <button id="stop-scan">Stop Scan</button>
+      <span id="estimated-time" class="estimated-time">Estimated time: 0m 0s</span>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="section">
+      <div class="progress-bar">
+        <div class="progress-bar-inner" id="progress-bar-inner"></div>
+      </div>
+      <span id="progress-text" class="progress-text">0/0</span>
+    </div>
+    
+    <!-- Output -->
+    <div class="section">
+      <div class="output" id="output"></div>
+    </div>
+    
+    <!-- Save Button -->
+    <div class="section">
+      <button id="save-output">Save Output to File</button>
+      <span id="save-message"></span>
+    </div>
+  </div>
 
-        for (var i = 3; i <= 16; i++) {
-            var option = document.createElement('option');
-            option.value = i;
-            option.text = i;
-            usernameLengthSelect.appendChild(option);
-        }
-
-        var scanning = false;
-        var paused = false;
-        var scanData = {};
-
-        function checkUsername() {
-            var username = usernameInput.value.trim();
-            if (username.length > 16) {
-                errorMessage.textContent = "A username can only be 16 characters long";
-                return;
-            }
-            if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-                errorMessage.textContent = "The username cannot contain any special characters";
-                return;
-            }
-            errorMessage.textContent = "";
-            outputDiv.innerHTML = "";
-
-            fetch('https://api.mojang.com/users/profiles/minecraft/' + username)
-                .then(function(response) {
-                    if (response.status === 204) {
-                        return null;
-                    }
-                    return response.json();
-                })
-                .then(function(data) {
-                    if (data && data.id) {
-                        outputDiv.innerHTML += '<span style="color:red;">' + username + ' is claimed - ' + data.id + '</span><br>';
-                    } else {
-                        outputDiv.innerHTML += '<span>' + "Couldn't find any profile with name " + username + '</span><br>';
-                    }
-                })
-                .catch(function(error) {
-                    outputDiv.innerHTML += '<span>Error: ' + error + '</span><br>';
-                });
-        }
-
-        checkButton.addEventListener('click', checkUsername);
-
-        function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
-            var chars = [];
-            if (includeLetters) {
-                chars = chars.concat('abcdefghijklmnopqrstuvwxyz'.split(''));
-            }
-            if (includeNumbers) {
-                chars = chars.concat('0123456789'.split(''));
-            }
-            if (includeUnderscore) {
-                chars.push('_');
-            }
-            if (chars.length === 0) {
-                errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
-                return [];
-            }
-            var usernames = [];
-            function helper(prefix, depth) {
-                if (depth === 0) {
-                    usernames.push(prefix);
-                    return;
-                }
-                for (var i = 0; i < chars.length; i++) {
-                    helper(prefix + chars[i], depth -1);
-                }
-            }
-            helper('', length);
-            return usernames;
-        }
-
-        function formatTime(seconds) {
-            var days = Math.floor(seconds / 86400);
-            seconds %= 86400;
-            var hours = Math.floor(seconds / 3600);
-            seconds %= 3600;
-            var minutes = Math.floor(seconds / 60);
-            seconds = Math.floor(seconds % 60);
-            return days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's';
-        }
-
-        function launchScan() {
-            scanning = true;
-            paused = false;
-            pauseScanButton.disabled = false;
-            pauseScanButton.textContent = 'Pause';
-            checkButton.disabled = true;
-            errorMessage.textContent = '';
-            estimatedTimeLabel.style.color = '#ffffff';
-
-            var includeLetters = includeLettersCheckbox.checked;
-            var includeNumbers = includeNumbersCheckbox.checked;
-            var includeUnderscore = includeUnderscoreCheckbox.checked;
-
-            var length = parseInt(usernameLengthSelect.value);
-            var searchClaimed = searchClaimedCheckbox.checked;
-
-            var usernames = generateUsernames(length, includeLetters, includeNumbers, includeUnderscore);
-            if (usernames.length === 0) {
-                scanning = false;
-                checkButton.disabled = false;
-                pauseScanButton.disabled = true;
-                return;
-            }
-
-            scanData = {
-                usernames: usernames,
-                total: usernames.length,
-                scanned: 0,
-                startTime: Date.now(),
-                searchClaimed: searchClaimed
-            };
-            outputDiv.innerHTML = '';
-            progressBarInner.style.width = '0%';
-            progressText.textContent = '0/' + scanData.total;
-            estimatedTimeLabel.textContent = 'Estimated time: 0m 0s';
-
-            scanNextUsername();
-        }
-
-        function scanNextUsername() {
-            if (!scanning) {
-                return;
-            }
-            if (paused) {
-                setTimeout(scanNextUsername, 100);
-                return;
-            }
-            if (scanData.scanned >= scanData.total) {
-                scanning = false;
-                checkButton.disabled = false;
-                pauseScanButton.disabled = true;
-                estimatedTimeLabel.textContent = 'Scan Complete!';
-                estimatedTimeLabel.style.color = 'green';
-                return;
-            }
-            var username = scanData.usernames[scanData.scanned];
-            fetch('https://api.mojang.com/users/profiles/minecraft/' + username)
-                .then(function(response) {
-                    if (response.status === 204) {
-                        return null;
-                    }
-                    return response.json();
-                })
-                .then(function(data) {
-                    if (scanData.searchClaimed && data && data.id) {
-                        outputDiv.innerHTML += '<span style="color:red;">' + username + ' is claimed - ' + data.id + '</span><br>';
-                    } else if (!scanData.searchClaimed && (!data || data.errorMessage)) {
-                        outputDiv.innerHTML += '<span>' + username + ' is available</span><br>';
-                    }
-                    outputDiv.scrollTop = outputDiv.scrollHeight;
-                })
-                .catch(function(error) {
-                    outputDiv.innerHTML += '<span>Error checking ' + username + ': ' + error + '</span><br>';
-                    outputDiv.scrollTop = outputDiv.scrollHeight;
-                })
-                .finally(function() {
-                    scanData.scanned++;
-                    var percent = (scanData.scanned / scanData.total) * 100;
-                    progressBarInner.style.width = percent + '%';
-                    progressText.textContent = scanData.scanned + '/' + scanData.total;
-
-                    var elapsedTime = (Date.now() - scanData.startTime) / 1000;
-                    var estimatedTotalTime = (elapsedTime / scanData.scanned) * scanData.total;
-                    var estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
-                    estimatedTimeLabel.textContent = 'Estimated time: ' + formatTime(estimatedTimeRemaining);
-
-                    setTimeout(scanNextUsername, 0);
-                });
-        }
-
-        function pauseScan() {
-            if (paused) {
-                paused = false;
-                pauseScanButton.textContent = 'Pause';
-                scanNextUsername();
-            } else {
-                paused = true;
-                pauseScanButton.textContent = 'Resume';
-            }
-        }
-
-        function stopScan() {
-            scanning = false;
-            paused = false;
-            checkButton.disabled = false;
-            pauseScanButton.disabled = true;
-            progressBarInner.style.width = '0%';
-            progressText.textContent = '0/0';
-            estimatedTimeLabel.textContent = 'Estimated time: 0m 0s';
-            estimatedTimeLabel.style.color = '#ffffff';
-        }
-
-        launchScanButton.addEventListener('click', launchScan);
-        pauseScanButton.addEventListener('click', pauseScan);
-        stopScanButton.addEventListener('click', stopScan);
-
-        function saveOutput() {
-            var content = outputDiv.innerText;
-            if (content.trim() === '') {
-                saveMessage.textContent = 'Textbox is empty. Nothing to save.';
-                saveMessage.style.color = 'red';
-                return;
-            }
-            var currentTime = new Date();
-            var filename = currentTime.toISOString().replace(/[:.]/g, '-') + '_Output.txt';
-            var blob = new Blob([content], { type: 'text/plain' });
-            var link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            link.click();
-            saveMessage.textContent = 'Output saved to ' + filename;
-            saveMessage.style.color = 'green';
-        }
-
-        saveOutputButton.addEventListener('click', saveOutput);
-    </script>
+  <script src="renderer.js"></script>
 </body>
 </html>
