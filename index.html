@@ -2,21 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Minecraft Username Checker</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
-    <!-- Top Section for Single Username Lookup -->
+    <!-- Single Username Lookup Section -->
     <div class="section">
       <label for="username">Enter Minecraft Username:</label>
       <input type="text" id="username" maxlength="16" placeholder="Enter Minecraft Username">
       <button id="check-username">Check Username</button>
       <span id="error-message" class="error-message"></span>
     </div>
-    
-    <!-- Scan Settings -->
+
+    <!-- Scan Settings Section -->
     <div class="section">
       <div class="options-left">
         <label for="username-length">Username Length:</label>
@@ -27,34 +26,34 @@
         <label><input type="checkbox" id="include-numbers"> Include numbers</label>
         <label><input type="checkbox" id="include-underscore"> Include _</label>
       </div>
+
+      <div class="buttons-right">
+        <!-- Buttons Row -->
+        <div class="buttons-row">
+          <button id="launch-scan">Launch Scan</button>
+          <button id="pause-scan" disabled>Pause</button>
+          <button id="stop-scan">Stop Scan</button>
+        </div>
+
+        <!-- Estimated Time -->
+        <span id="estimated-time" class="estimated-time">Estimated time: 0h 0m 0s</span>
+      </div>
     </div>
 
-    <!-- Launch, Pause, Stop buttons in a row -->
-    <div class="section buttons-row">
-      <button id="launch-scan">Launch Scan</button>
-      <button id="pause-scan" disabled>Pause</button>
-      <button id="stop-scan">Stop Scan</button>
-    </div>
-
-    <!-- Estimated Time -->
-    <div class="section">
-      <span id="estimated-time" class="estimated-time">Estimated time: 0h 0m 0s</span>
-    </div>
-
-    <!-- Progress Bar -->
+    <!-- Progress Bar Section -->
     <div class="section">
       <div class="progress-bar">
         <div class="progress-bar-inner" id="progress-bar-inner"></div>
       </div>
       <span id="progress-text" class="progress-text">0/0</span>
     </div>
-    
-    <!-- Output -->
+
+    <!-- Output Section -->
     <div class="section">
       <div class="output" id="output"></div>
     </div>
-    
-    <!-- Save Button -->
+
+    <!-- Save Output Section -->
     <div class="section">
       <button id="save-output">Save Output to File</button>
       <span id="save-message"></span>
