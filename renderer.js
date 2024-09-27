@@ -1,7 +1,7 @@
 const usernameInput = document.getElementById('username');
 const checkButton = document.getElementById('check-username');
 const errorMessage = document.getElementById('error-message');
-const searchClaimedCheckbox = document.getElementById('search-claimed');
+const includeClaimedCheckbox = document.getElementById('include-claimed');
 const usernameLengthSelect = document.getElementById('username-length');
 const includeLettersCheckbox = document.getElementById('include-letters');
 const includeNumbersCheckbox = document.getElementById('include-numbers');
@@ -19,9 +19,11 @@ const saveMessage = document.getElementById('save-message');
 let scanning = false;
 let paused = false;
 let scanData = {};
+let totalPausedTime = 0;
+let pauseStartTime = 0;
 
-// Populate username length options (including 1 and 2)
-for (let i = 1; i <= 16; i++) {
+// Populate username length options (1 to 5)
+for (let i = 1; i <= 5; i++) {
   const option = document.createElement('option');
   option.value = i;
   option.text = i;
@@ -50,7 +52,7 @@ function checkUsername() {
 
   fetchWithRetry(proxyUrl + apiUrl)
     .then((data) => {
-      if (data === null) {
+      if (data === null || (data && data.errorMessage && data.errorMessage.includes("Couldn't find any profile with name"))) {
         outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
       } else if (data && data.id) {
         outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
@@ -67,7 +69,7 @@ checkButton.addEventListener('click', checkUsername);
 
 // Fetch with Retry Function (Retries indefinitely until success)
 function fetchWithRetry(url, delay = 1000) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     function attempt() {
       fetch(url)
         .then((response) => {
@@ -99,56 +101,91 @@ function launchScan() {
   const includeNumbers = includeNumbersCheckbox.checked;
   const includeUnderscore = includeUnderscoreCheckbox.checked;
   const length = parseInt(usernameLengthSelect.value);
+  const includeClaimed = includeClaimedCheckbox.checked;
+
+  if (length > 5) {
+    errorMessage.textContent = "Scanning usernames longer than 5 characters is not supported.";
+    return;
+  }
 
   if (!includeLetters && !includeNumbers && !includeUnderscore) {
     errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
     return;
   }
 
-  const usernames = generateUsernames(length, includeLetters, includeNumbers, includeUnderscore);
+  const totalPossibleUsernames = estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore);
+
+  // Cap totalPossibleUsernames to prevent freezing (e.g., 100,000)
+  const maxUsernames = 100000;
+  if (totalPossibleUsernames > maxUsernames) {
+    errorMessage.textContent = `Scanning ${totalPossibleUsernames} usernames may cause performance issues. Please choose a shorter username length or reduce character options.`;
+    return;
+  }
+
+  errorMessage.textContent = "";
+
+  const usernameGenerator = generateUsernames(length, includeLetters, includeNumbers, includeUnderscore);
+  
   scanData = {
-    usernames,
-    total: usernames.length,
+    generator: usernameGenerator,
+    total: totalPossibleUsernames,
     scanned: 0,
     startTime: Date.now(),
+    pausedTime: 0,
   };
 
   outputDiv.innerHTML = '';
   progressBarInner.style.width = '0%';
   progressText.textContent = `0/${scanData.total}`;
+  estimatedTimeLabel.textContent = `Estimated time: 0h 0m 0s`;
 
   scanning = true;
   paused = false;
+  totalPausedTime = 0;
+  pauseScanButton.textContent = 'Pause';
   pauseScanButton.disabled = false;
   stopScanButton.disabled = false;
 
-  scanNextUsername();
+  scanNextUsername(includeClaimed);
 }
 
-function scanNextUsername() {
+function scanNextUsername(includeClaimed) {
   if (!scanning || paused || scanData.scanned >= scanData.total) return;
 
-  const username = scanData.usernames[scanData.scanned];
+  const { value: username, done } = scanData.generator.next();
+
+  if (done) {
+    // Scan complete
+    scanning = false;
+    pauseScanButton.disabled = true;
+    stopScanButton.disabled = true;
+    return;
+  }
+
   const proxyUrl = "https://web-production-787c.up.railway.app/";
   const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
 
   fetchWithRetry(proxyUrl + apiUrl)
     .then((data) => {
       if (data === null) {
+        // Username is available
         outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
       } else if (data && data.id) {
-        outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
+        if (includeClaimed) {
+          // Username is claimed
+          outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
+        }
+        // If includeClaimed is not checked, do not display claimed usernames
       }
       scanData.scanned++;
       updateProgress();
-      setTimeout(scanNextUsername, 0); // Proceed to next username
+      setTimeout(() => scanNextUsername(includeClaimed), 0); // Proceed to next username asynchronously
     })
     .catch((error) => {
-      // This catch block should rarely be reached due to infinite retries
-      outputDiv.innerHTML += `<span>Error checking ${username}: ${error}</span><br>`;
+      // This catch block should rarely be reached due to retries in fetchWithRetry
       scanData.scanned++;
       updateProgress();
-      setTimeout(scanNextUsername, 0);
+      setTimeout(() => scanNextUsername(includeClaimed), 0);
     });
 }
 
@@ -158,13 +195,17 @@ function updateProgress() {
   progressText.textContent = `${scanData.scanned}/${scanData.total}`;
 
   // Calculate estimated time remaining
-  const elapsedTime = (Date.now() - scanData.startTime) / 1000;
-  const estimatedTotalTime = (elapsedTime / scanData.scanned) * scanData.total;
+  const elapsedTime = (Date.now() - scanData.startTime - scanData.pausedTime) / 1000; // in seconds
+  const averageTimePerScan = scanData.scanned > 0 ? elapsedTime / scanData.scanned : 0;
+  const estimatedTotalTime = averageTimePerScan * scanData.total;
   const estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
   estimatedTimeLabel.textContent = `Estimated time: ${formatTime(estimatedTimeRemaining)}`;
 }
 
 function formatTime(seconds) {
+  if (seconds < 0 || isNaN(seconds)) {
+    return '0h 0m 0s';
+  }
   const hours = Math.floor(seconds / 3600);
   seconds = seconds % 3600;
   const minutes = Math.floor(seconds / 60);
@@ -176,12 +217,16 @@ function formatTime(seconds) {
 function pauseScan() {
   paused = true;
   pauseScanButton.textContent = 'Resume';
+  pauseStartTime = Date.now();
 }
 
 function resumeScan() {
   paused = false;
   pauseScanButton.textContent = 'Pause';
-  scanNextUsername();
+  // Calculate paused duration and add to scanData.pausedTime
+  const pausedDuration = Date.now() - pauseStartTime;
+  scanData.pausedTime += pausedDuration;
+  scanNextUsername(includeClaimedCheckbox.checked);
 }
 
 pauseScanButton.addEventListener('click', () => {
@@ -203,7 +248,7 @@ function stopScan() {
 stopScanButton.addEventListener('click', stopScan);
 launchScanButton.addEventListener('click', launchScan);
 
-// Generate Usernames Function
+// Generate Usernames Generator Function
 function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
   let chars = [];
   if (includeLetters) chars = chars.concat('abcdefghijklmnopqrstuvwxyz'.split(''));
@@ -212,23 +257,32 @@ function generateUsernames(length, includeLetters, includeNumbers, includeUnders
 
   if (chars.length === 0) {
     errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
-    return [];
+    return (function* () {})(); // Empty generator
   }
 
-  const usernames = [];
-
-  function helper(prefix, depth) {
-    if (depth === 0) {
-      usernames.push(prefix);
-      return;
-    }
-    for (let i = 0; i < chars.length; i++) {
-      helper(prefix + chars[i], depth - 1);
+  function* generator() {
+    const totalCombinations = Math.pow(chars.length, length);
+    for (let i = 0; i < totalCombinations; i++) {
+      let num = i;
+      let username = '';
+      for (let j = 0; j < length; j++) {
+        username = chars[num % chars.length] + username;
+        num = Math.floor(num / chars.length);
+      }
+      yield username;
     }
   }
 
-  helper('', length);
-  return usernames;
+  return generator();
+}
+
+// Estimate Total Usernames Function
+function estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
+  let charsCount = 0;
+  if (includeLetters) charsCount += 26;
+  if (includeNumbers) charsCount += 10;
+  if (includeUnderscore) charsCount += 1;
+  return Math.pow(charsCount, length);
 }
 
 // Save Output Function
