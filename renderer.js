@@ -15,6 +15,7 @@ const progressText = document.getElementById('progress-text');
 const outputDiv = document.getElementById('output');
 const saveOutputButton = document.getElementById('save-output');
 const saveMessage = document.getElementById('save-message');
+const warningMessage = document.getElementById('warning-message');
 
 let scanning = false;
 let paused = false;
@@ -22,8 +23,8 @@ let scanData = {};
 let totalPausedTime = 0;
 let pauseStartTime = 0;
 
-// Populate username length options (1 to 5)
-for (let i = 1; i <= 5; i++) {
+// Populate username length options (1 to 16)
+for (let i = 1; i <= 16; i++) {
   const option = document.createElement('option');
   option.value = i;
   option.text = i;
@@ -57,11 +58,11 @@ function checkUsername() {
       } else if (data && data.id) {
         outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
       } else {
-        outputDiv.innerHTML += `<span>Error: Unexpected response</span><br>`;
+        outputDiv.innerHTML += `<span style="color:red;">Error: Unexpected response</span><br>`;
       }
     })
     .catch((error) => {
-      outputDiv.innerHTML += `<span>Error: ${error}</span><br>`;
+      outputDiv.innerHTML += `<span style="color:red;">Error: ${error}</span><br>`;
     });
 }
 
@@ -96,15 +97,27 @@ function fetchWithRetry(url, delay = 1000) {
 }
 
 // Scan Function
-function launchScan() {
+async function launchScan() {
+  if (scanning) {
+    errorMessage.textContent = "A scan is already in progress.";
+    return;
+  }
+
   const includeLetters = includeLettersCheckbox.checked;
   const includeNumbers = includeNumbersCheckbox.checked;
   const includeUnderscore = includeUnderscoreCheckbox.checked;
   const length = parseInt(usernameLengthSelect.value);
   const includeClaimed = includeClaimedCheckbox.checked;
 
+  // Warning for large scans
   if (length > 5) {
-    errorMessage.textContent = "Scanning usernames longer than 5 characters is not supported.";
+    warningMessage.textContent = "Warning: Scanning usernames longer than 5 characters may take a significant amount of time and resources.";
+  } else {
+    warningMessage.textContent = "";
+  }
+
+  if (length < 1 || length > 16) {
+    errorMessage.textContent = "Username length must be between 1 and 16.";
     return;
   }
 
@@ -123,9 +136,10 @@ function launchScan() {
   }
 
   errorMessage.textContent = "";
+  warningMessage.textContent = "";
 
   const usernameGenerator = generateUsernames(length, includeLetters, includeNumbers, includeUnderscore);
-  
+
   scanData = {
     generator: usernameGenerator,
     total: totalPossibleUsernames,
@@ -149,8 +163,16 @@ function launchScan() {
   scanNextUsername(includeClaimed);
 }
 
-function scanNextUsername(includeClaimed) {
-  if (!scanning || paused || scanData.scanned >= scanData.total) return;
+async function scanNextUsername(includeClaimed) {
+  if (!scanning || paused || scanData.scanned >= scanData.total) {
+    if (scanData.scanned >= scanData.total) {
+      // Scan complete
+      scanning = false;
+      pauseScanButton.disabled = true;
+      stopScanButton.disabled = true;
+    }
+    return;
+  }
 
   const { value: username, done } = scanData.generator.next();
 
@@ -165,28 +187,31 @@ function scanNextUsername(includeClaimed) {
   const proxyUrl = "https://web-production-787c.up.railway.app/";
   const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
 
-  fetchWithRetry(proxyUrl + apiUrl)
-    .then((data) => {
-      if (data === null) {
-        // Username is available
-        outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
-      } else if (data && data.id) {
-        if (includeClaimed) {
-          // Username is claimed
-          outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
-        }
-        // If includeClaimed is not checked, do not display claimed usernames
+  try {
+    const data = await fetchWithRetry(proxyUrl + apiUrl);
+
+    if (data === null) {
+      // Username is available
+      outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
+    } else if (data && data.id) {
+      if (includeClaimed) {
+        // Username is claimed
+        outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
       }
-      scanData.scanned++;
-      updateProgress();
-      setTimeout(() => scanNextUsername(includeClaimed), 0); // Proceed to next username asynchronously
-    })
-    .catch((error) => {
-      // This catch block should rarely be reached due to retries in fetchWithRetry
-      scanData.scanned++;
-      updateProgress();
-      setTimeout(() => scanNextUsername(includeClaimed), 0);
-    });
+      // If includeClaimed is not checked, do not display claimed usernames
+    }
+
+    scanData.scanned++;
+    updateProgress();
+
+    // Yield control to the browser to prevent freezing
+    setTimeout(() => scanNextUsername(includeClaimed), 0);
+  } catch (error) {
+    // This catch block should rarely be reached due to retries in fetchWithRetry
+    scanData.scanned++;
+    updateProgress();
+    setTimeout(() => scanNextUsername(includeClaimed), 0);
+  }
 }
 
 function updateProgress() {
