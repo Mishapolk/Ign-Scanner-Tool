@@ -18,7 +18,7 @@ body {
 
 .scan-settings {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
 }
 
@@ -29,18 +29,10 @@ body {
   max-width: 45%;
 }
 
-.buttons-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  flex: 1;
-  max-width: 50%;
-}
-
 .buttons-row {
   display: flex;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-top: 10px;
 }
 
 label {
@@ -79,17 +71,22 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.progress-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .progress-bar {
-  width: 90%;
+  flex: 1;
   background-color: #444;
   border-radius: 5px;
   overflow: hidden;
-  display: inline-block;
-  margin-top: 10px;
+  height: 20px;
 }
 
 .progress-bar-inner {
-  height: 20px;
+  height: 100%;
   background-color: #00cc00;
   width: 0%;
   transition: width 0.3s ease;
@@ -104,7 +101,6 @@ button:disabled {
   padding: 10px;
   box-sizing: border-box;
   border-radius: 5px;
-  margin-top: 20px;
 }
 
 .error-message {
@@ -143,5 +139,4 @@ select {
 
 .progress-text {
   font-size: 1.1em;
-  margin-left: 10px;
 }
