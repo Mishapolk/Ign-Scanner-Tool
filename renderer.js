@@ -1,4 +1,3 @@
-// DOM elements
 const usernameInput = document.getElementById('username');
 const checkButton = document.getElementById('check-username');
 const errorMessage = document.getElementById('error-message');
@@ -21,20 +20,22 @@ let scanning = false;
 let paused = false;
 let scanData = {};
 
-// Populate username length options (1 to 16, default to 3)
+// Populate username length options (including 1 and 2)
 for (let i = 1; i <= 16; i++) {
   const option = document.createElement('option');
   option.value = i;
   option.text = i;
-  if (i === 3) option.selected = true;
+  if (i === 3) {
+    option.selected = true;  // Default selection
+  }
   usernameLengthSelect.appendChild(option);
 }
 
-// Check single username lookup
+// Single Username Lookup Function
 function checkUsername() {
   const username = usernameInput.value.trim();
-  if (username.length > 16) {
-    errorMessage.textContent = "A username can only be 16 characters long";
+  if (username.length > 16 || username.length === 0) {
+    errorMessage.textContent = "A username must be between 1 and 16 characters long";
     return;
   }
   if (!/^[a-zA-Z0-9_]+$/.test(username)) {
@@ -48,12 +49,19 @@ function checkUsername() {
   const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
 
   fetch(proxyUrl + apiUrl)
-    .then((response) => response.json())
+    .then((response) => {
+      if (response.status === 204) {
+        return null;
+      }
+      return response.json();
+    })
     .then((data) => {
-      if (data && data.errorMessage === "Couldn't find any profile with name") {
+      if (data === null || (data && data.errorMessage === "Couldn't find any profile with name")) {
         outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
       } else if (data && data.id) {
         outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
+      } else {
+        outputDiv.innerHTML += `<span>Error: Unexpected response</span><br>`;
       }
     })
     .catch((error) => {
@@ -63,7 +71,7 @@ function checkUsername() {
 
 checkButton.addEventListener('click', checkUsername);
 
-// Helper function for retrying API requests on rate limiting or failure
+// Fetch with Retry Function
 function fetchWithRetry(url, retries = 5, delay = 1000) {
   return new Promise((resolve, reject) => {
     fetch(url)
@@ -72,7 +80,7 @@ function fetchWithRetry(url, retries = 5, delay = 1000) {
         return response.json();
       })
       .then((data) => {
-        if (data && data.errorMessage === "Couldn't find any profile with name") {
+        if (data === null || (data && data.errorMessage === "Couldn't find any profile with name")) {
           resolve(data);  // Username available
         } else if (data && data.id) {
           resolve(data);  // Username claimed
@@ -87,7 +95,7 @@ function fetchWithRetry(url, retries = 5, delay = 1000) {
   });
 }
 
-// Scan function to iterate over possible usernames
+// Scan Function
 function launchScan() {
   const includeLetters = includeLettersCheckbox.checked;
   const includeNumbers = includeNumbersCheckbox.checked;
@@ -113,11 +121,12 @@ function launchScan() {
 
   scanning = true;
   paused = false;
+  pauseScanButton.disabled = false;
+  stopScanButton.disabled = false;
 
   scanNextUsername();
 }
 
-// Function to handle each username lookup during the scan
 function scanNextUsername() {
   if (!scanning || paused || scanData.scanned >= scanData.total) return;
 
@@ -127,18 +136,22 @@ function scanNextUsername() {
 
   fetchWithRetry(proxyUrl + apiUrl)
     .then((data) => {
-      if (data && data.errorMessage === "Couldn't find any profile with name") {
+      if (data === null || (data && data.errorMessage === "Couldn't find any profile with name")) {
         outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
       } else if (data && data.id) {
         outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
+      } else {
+        outputDiv.innerHTML += `<span>Error checking ${username}: Unexpected response</span><br>`;
       }
       scanData.scanned++;
-      updateProgress();  // Update progress bar and estimated time
-      scanNextUsername();  // Continue scanning
+      updateProgress();
+      setTimeout(scanNextUsername, 10);  // Slight delay to prevent blocking
     })
     .catch((error) => {
       outputDiv.innerHTML += `<span>Error checking ${username}: ${error}</span><br>`;
-      scanNextUsername();  // Retry next username
+      scanData.scanned++;
+      updateProgress();
+      setTimeout(scanNextUsername, 10);  // Continue with the next username
     });
 }
 
@@ -154,15 +167,15 @@ function updateProgress() {
   estimatedTimeLabel.textContent = `Estimated time: ${formatTime(estimatedTimeRemaining)}`;
 }
 
-// Helper function to format time in hours, minutes, and seconds
 function formatTime(seconds) {
   const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
+  seconds = seconds % 3600;
+  const minutes = Math.floor(seconds / 60);
   const sec = Math.floor(seconds % 60);
   return `${hours}h ${minutes}m ${sec}s`;
 }
 
-// Pause and stop functions
+// Pause and Stop Functions
 function pauseScan() {
   paused = true;
   pauseScanButton.textContent = 'Resume';
@@ -181,22 +194,24 @@ pauseScanButton.addEventListener('click', () => {
 
 function stopScan() {
   scanning = false;
+  paused = false;
+  pauseScanButton.disabled = true;
+  stopScanButton.disabled = true;
   progressBarInner.style.width = '0%';
   progressText.textContent = '0/0';
   estimatedTimeLabel.textContent = 'Estimated time: 0h 0m 0s';
 }
 
 stopScanButton.addEventListener('click', stopScan);
-
 launchScanButton.addEventListener('click', launchScan);
 
-// Helper function to generate all possible usernames for a given length
+// Generate Usernames Function
 function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
   let chars = [];
   if (includeLetters) chars = chars.concat('abcdefghijklmnopqrstuvwxyz'.split(''));
   if (includeNumbers) chars = chars.concat('0123456789'.split(''));
   if (includeUnderscore) chars.push('_');
-  
+
   if (chars.length === 0) {
     errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
     return [];
@@ -218,7 +233,7 @@ function generateUsernames(length, includeLetters, includeNumbers, includeUnders
   return usernames;
 }
 
-// Saving output to file
+// Save Output Function
 function saveOutput() {
   const content = outputDiv.innerText;
   if (content.trim() === '') {
