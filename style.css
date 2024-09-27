@@ -16,11 +16,17 @@ body {
   margin-bottom: 20px;
 }
 
+.scan-settings {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
 .options-left {
   display: flex;
   flex-direction: column;
   flex: 1;
-  max-width: 50%;
+  max-width: 45%;
 }
 
 .buttons-right {
@@ -28,25 +34,29 @@ body {
   flex-direction: column;
   align-items: flex-end;
   flex: 1;
+  max-width: 50%;
 }
 
 .buttons-row {
   display: flex;
   gap: 10px;
+  margin-bottom: 10px;
 }
 
 label {
   margin-bottom: 10px;
   font-size: 1.1em;
+  cursor: pointer;
 }
 
 input[type="text"] {
   padding: 10px;
   font-size: 1em;
-  width: 60%;
+  width: 100%;
   border: 1px solid #ccc;
   border-radius: 5px;
-  margin-right: 10px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
 }
 
 button {
@@ -57,6 +67,7 @@ button {
   font-size: 1em;
   border-radius: 5px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 button:hover {
@@ -98,10 +109,12 @@ button:disabled {
 
 .error-message {
   color: red;
+  font-size: 1em;
 }
 
 .success-message {
   color: green;
+  font-size: 1em;
 }
 
 .estimated-time {
