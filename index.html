@@ -15,7 +15,7 @@
       <span id="error-message" class="error-message"></span>
     </div>
 
-    <!-- Scan Settings Section -->
+    <!-- Scan Settings and Control Buttons Section -->
     <div class="section scan-settings">
       <div class="options-left">
         <label for="username-length">Username Length:</label>
@@ -26,21 +26,18 @@
         <label><input type="checkbox" id="include-numbers"> Include numbers</label>
         <label><input type="checkbox" id="include-underscore"> Include _</label>
         <span id="warning-message" class="warning-message"></span>
-      </div>
 
-      <div class="buttons-right">
-        <!-- Buttons Row -->
         <div class="buttons-row">
           <button id="launch-scan">Launch Scan</button>
           <button id="pause-scan" disabled>Pause</button>
           <button id="stop-scan" disabled>Stop Scan</button>
         </div>
-        <span id="estimated-time" class="estimated-time">Estimated time: 0h 0m 0s</span>
       </div>
     </div>
 
-    <!-- Progress Bar Section -->
-    <div class="section">
+    <!-- Estimated Time and Progress Bar Section -->
+    <div class="section progress-section">
+      <span id="estimated-time" class="estimated-time">Estimated time: 0h 0m 0s</span>
       <div class="progress-bar">
         <div class="progress-bar-inner" id="progress-bar-inner"></div>
       </div>
