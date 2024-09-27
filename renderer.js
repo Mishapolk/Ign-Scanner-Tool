@@ -22,6 +22,7 @@ let paused = false;
 let scanData = {};
 let totalPausedTime = 0;
 let pauseStartTime = 0;
+let batchSize = 100; // Number of usernames to process before updating the DOM
 
 // Populate username length options (1 to 16)
 for (let i = 1; i <= 16; i++) {
@@ -128,15 +129,13 @@ async function launchScan() {
 
   const totalPossibleUsernames = estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore);
 
-  // Cap totalPossibleUsernames to prevent freezing (e.g., 100,000)
-  const maxUsernames = 100000;
-  if (totalPossibleUsernames > maxUsernames) {
-    errorMessage.textContent = `Scanning ${totalPossibleUsernames} usernames may cause performance issues. Please choose a shorter username length or reduce character options.`;
-    return;
+  // Warn the user if the number of usernames is extremely large
+  if (length === 16 && totalPossibleUsernames > 1e+6) { // Example threshold
+    warningMessage.textContent += " Additionally, scanning a very large number of usernames may take a very long time.";
   }
 
   errorMessage.textContent = "";
-  warningMessage.textContent = "";
+  // Warning message already set above
 
   const usernameGenerator = generateUsernames(length, includeLetters, includeNumbers, includeUnderscore);
 
@@ -146,6 +145,7 @@ async function launchScan() {
     scanned: 0,
     startTime: Date.now(),
     pausedTime: 0,
+    batch: [],
   };
 
   outputDiv.innerHTML = '';
@@ -170,48 +170,44 @@ async function scanNextUsername(includeClaimed) {
       scanning = false;
       pauseScanButton.disabled = true;
       stopScanButton.disabled = true;
+      warningMessage.textContent = "Scan complete.";
     }
     return;
   }
 
-  const { value: username, done } = scanData.generator.next();
+  let count = 0;
+  while (count < batchSize && scanData.scanned < scanData.total && !paused) {
+    const { value: username, done } = scanData.generator.next();
+    if (done) break;
 
-  if (done) {
-    // Scan complete
-    scanning = false;
-    pauseScanButton.disabled = true;
-    stopScanButton.disabled = true;
-    return;
-  }
+    const proxyUrl = "https://web-production-787c.up.railway.app/";
+    const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
 
-  const proxyUrl = "https://web-production-787c.up.railway.app/";
-  const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
-
-  try {
     const data = await fetchWithRetry(proxyUrl + apiUrl);
 
     if (data === null) {
       // Username is available
-      outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
+      scanData.batch.push(`<span style="color:green;">${username} is available</span>`);
     } else if (data && data.id) {
       if (includeClaimed) {
         // Username is claimed
-        outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
+        scanData.batch.push(`<span style="color:red;">${username} is claimed - ${data.id}</span>`);
       }
       // If includeClaimed is not checked, do not display claimed usernames
     }
 
     scanData.scanned++;
-    updateProgress();
+    count++;
 
-    // Yield control to the browser to prevent freezing
-    setTimeout(() => scanNextUsername(includeClaimed), 0);
-  } catch (error) {
-    // This catch block should rarely be reached due to retries in fetchWithRetry
-    scanData.scanned++;
-    updateProgress();
-    setTimeout(() => scanNextUsername(includeClaimed), 0);
+    // Update progress after each batch
+    if (scanData.scanned % batchSize === 0 || scanData.scanned === scanData.total) {
+      updateProgress();
+      appendBatch();
+    }
   }
+
+  // Schedule the next batch
+  setTimeout(() => scanNextUsername(includeClaimed), 0);
 }
 
 function updateProgress() {
@@ -220,11 +216,23 @@ function updateProgress() {
   progressText.textContent = `${scanData.scanned}/${scanData.total}`;
 
   // Calculate estimated time remaining
-  const elapsedTime = (Date.now() - scanData.startTime - scanData.pausedTime) / 1000; // in seconds
+  const now = Date.now();
+  const elapsedTime = (now - scanData.startTime - scanData.pausedTime) / 1000; // in seconds
   const averageTimePerScan = scanData.scanned > 0 ? elapsedTime / scanData.scanned : 0;
   const estimatedTotalTime = averageTimePerScan * scanData.total;
   const estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
   estimatedTimeLabel.textContent = `Estimated time: ${formatTime(estimatedTimeRemaining)}`;
+}
+
+function appendBatch() {
+  if (scanData.batch.length > 0) {
+    // Append the batch to the output
+    outputDiv.innerHTML += scanData.batch.join('<br>') + '<br>';
+    // Clear the batch
+    scanData.batch = [];
+    // Scroll to bottom
+    outputDiv.scrollTop = outputDiv.scrollHeight;
+  }
 }
 
 function formatTime(seconds) {
@@ -268,6 +276,7 @@ function stopScan() {
   progressBarInner.style.width = '0%';
   progressText.textContent = '0/0';
   estimatedTimeLabel.textContent = 'Estimated time: 0h 0m 0s';
+  warningMessage.textContent = "Scan stopped.";
 }
 
 stopScanButton.addEventListener('click', stopScan);
