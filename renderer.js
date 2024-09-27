@@ -26,7 +26,7 @@ for (let i = 1; i <= 16; i++) {
   option.value = i;
   option.text = i;
   if (i === 3) {
-    option.selected = true;  // Default selection
+    option.selected = true; // Default selection
   }
   usernameLengthSelect.appendChild(option);
 }
@@ -48,15 +48,9 @@ function checkUsername() {
   const proxyUrl = "https://web-production-787c.up.railway.app/";
   const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
 
-  fetch(proxyUrl + apiUrl)
-    .then((response) => {
-      if (response.status === 204) {
-        return null;
-      }
-      return response.json();
-    })
+  fetchWithRetry(proxyUrl + apiUrl)
     .then((data) => {
-      if (data === null || (data && data.errorMessage === "Couldn't find any profile with name")) {
+      if (data === null) {
         outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
       } else if (data && data.id) {
         outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
@@ -71,27 +65,31 @@ function checkUsername() {
 
 checkButton.addEventListener('click', checkUsername);
 
-// Fetch with Retry Function
-function fetchWithRetry(url, retries = 5, delay = 1000) {
+// Fetch with Retry Function (Retries indefinitely until success)
+function fetchWithRetry(url, delay = 1000) {
   return new Promise((resolve, reject) => {
-    fetch(url)
-      .then((response) => {
-        if (response.status === 204) return resolve(null);
-        return response.json();
-      })
-      .then((data) => {
-        if (data === null || (data && data.errorMessage === "Couldn't find any profile with name")) {
-          resolve(data);  // Username available
-        } else if (data && data.id) {
-          resolve(data);  // Username claimed
-        } else {
-          reject('Rate limit or error');  // Retry
-        }
-      })
-      .catch(() => {
-        if (retries === 0) reject('Failed after retries');
-        else setTimeout(() => resolve(fetchWithRetry(url, retries - 1, delay)), delay);
-      });
+    function attempt() {
+      fetch(url)
+        .then((response) => {
+          if (response.status === 204) return resolve(null);
+          return response.json();
+        })
+        .then((data) => {
+          if (data === null || (data && data.errorMessage && data.errorMessage.includes("Couldn't find any profile with name"))) {
+            resolve(null); // Username available
+          } else if (data && data.id) {
+            resolve(data); // Username claimed
+          } else {
+            // Retry on unexpected data
+            setTimeout(attempt, delay);
+          }
+        })
+        .catch(() => {
+          // Retry on network error or rate limit
+          setTimeout(attempt, delay);
+        });
+    }
+    attempt();
   });
 }
 
@@ -112,7 +110,7 @@ function launchScan() {
     usernames,
     total: usernames.length,
     scanned: 0,
-    startTime: Date.now()
+    startTime: Date.now(),
   };
 
   outputDiv.innerHTML = '';
@@ -136,22 +134,21 @@ function scanNextUsername() {
 
   fetchWithRetry(proxyUrl + apiUrl)
     .then((data) => {
-      if (data === null || (data && data.errorMessage === "Couldn't find any profile with name")) {
+      if (data === null) {
         outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
       } else if (data && data.id) {
         outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
-      } else {
-        outputDiv.innerHTML += `<span>Error checking ${username}: Unexpected response</span><br>`;
       }
       scanData.scanned++;
       updateProgress();
-      setTimeout(scanNextUsername, 10);  // Slight delay to prevent blocking
+      setTimeout(scanNextUsername, 0); // Proceed to next username
     })
     .catch((error) => {
+      // This catch block should rarely be reached due to infinite retries
       outputDiv.innerHTML += `<span>Error checking ${username}: ${error}</span><br>`;
       scanData.scanned++;
       updateProgress();
-      setTimeout(scanNextUsername, 10);  // Continue with the next username
+      setTimeout(scanNextUsername, 0);
     });
 }
 
@@ -197,6 +194,7 @@ function stopScan() {
   paused = false;
   pauseScanButton.disabled = true;
   stopScanButton.disabled = true;
+  pauseScanButton.textContent = 'Pause';
   progressBarInner.style.width = '0%';
   progressText.textContent = '0/0';
   estimatedTimeLabel.textContent = 'Estimated time: 0h 0m 0s';
