@@ -107,7 +107,7 @@ async function launchScan() {
   checkButton.disabled = true;
   checkButton.classList.add('flat');
   checkButton.classList.remove('active');
-  
+
   const includeLetters = includeLettersCheckbox.checked;
   const includeNumbers = includeNumbersCheckbox.checked;
   const includeUnderscore = includeUnderscoreCheckbox.checked;
