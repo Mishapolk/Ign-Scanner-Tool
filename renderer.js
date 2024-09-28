@@ -1,373 +1,418 @@
-/* Import Source Code Pro Font */
-@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600;700&display=swap');
+const usernameInput = document.getElementById('username');
+const checkButton = document.getElementById('check-username');
+const errorMessage = document.getElementById('error-message');
+const includeClaimedCheckbox = document.getElementById('include-claimed');
+const usernameLengthSelect = document.getElementById('username-length');
+const includeLettersCheckbox = document.getElementById('include-letters');
+const includeNumbersCheckbox = document.getElementById('include-numbers');
+const includeUnderscoreCheckbox = document.getElementById('include-underscore');
+const launchScanButton = document.getElementById('launch-scan');
+const pauseScanButton = document.getElementById('pause-scan');
+const stopScanButton = document.getElementById('stop-scan');
+const estimatedTimeLabel = document.getElementById('estimated-time');
+const progressBarInner = document.getElementById('progress-bar-inner');
+const progressText = document.getElementById('progress-text');
+const outputDiv = document.getElementById('output');
+const saveOutputButton = document.getElementById('save-output');
+const saveMessage = document.getElementById('save-message');
+const warningMessage = document.getElementById('warning-message');
 
-/* Reset some basic elements */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+let scanning = false;
+let paused = false;
+let scanData = {};
+let totalPausedTime = 0;
+let pauseStartTime = 0;
+
+// Populate username length options (1 to 16)
+for (let i = 1; i <= 16; i++) {
+  const option = document.createElement('option');
+  option.value = i;
+  option.text = i;
+  if (i === 3) {
+    option.selected = true; // Default selection
+  }
+  usernameLengthSelect.appendChild(option);
 }
 
-body {
-  background-color: #121212; /* Deep black background */
-  font-family: 'Source Code Pro', monospace; /* Applied font */
-  color: #e0e0e0; /* Light gray text for better contrast */
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start; /* Allow content to stack vertically and enable scrolling */
-  overflow-y: auto; /* Enable vertical scrolling */
+// Single Username Lookup Function
+function checkUsername() {
+  const username = usernameInput.value.trim();
+  if (username.length === 0 || username.length > 16) {
+    errorMessage.textContent = "A username must be between 1 and 16 characters long.";
+    return;
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    errorMessage.textContent = "The username cannot contain any special characters.";
+    return;
+  }
+  errorMessage.textContent = "";
+  outputDiv.innerHTML = "";
+
+  const proxyUrl = "https://web-production-787c.up.railway.app/";
+  const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
+
+  fetchWithRetry(proxyUrl + apiUrl)
+    .then((data) => {
+      if (data === null || (data && data.errorMessage && data.errorMessage.includes("Couldn't find any profile with name"))) {
+        outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
+      } else if (data && data.id) {
+        outputDiv.innerHTML += `<span class="claimed">${username} is claimed - ${data.id}</span>`;
+      } else {
+        outputDiv.innerHTML += `<span class="error">Error: Unexpected response</span>`;
+      }
+    })
+    .catch((error) => {
+      outputDiv.innerHTML += `<span class="error">Error: ${error}</span>`;
+    });
 }
 
-.container {
-  max-width: 1200px;
-  width: 100%;
-  padding: 25px;
-  background-color: #1e1e1e; /* Dark gray container */
-  border-radius: 12px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+checkButton.addEventListener('click', checkUsername);
+
+// Fetch with Retry Function (Retries indefinitely until success)
+function fetchWithRetry(url, delay = 1000) {
+  return new Promise((resolve) => {
+    function attempt() {
+      fetch(url)
+        .then((response) => {
+          if (response.status === 204) return resolve(null);
+          return response.json();
+        })
+        .then((data) => {
+          if (data === null || (data && data.errorMessage && data.errorMessage.includes("Couldn't find any profile with name"))) {
+            resolve(null); // Username available
+          } else if (data && data.id) {
+            resolve(data); // Username claimed
+          } else {
+            // Retry on unexpected data
+            setTimeout(attempt, delay);
+          }
+        })
+        .catch(() => {
+          // Retry on network error or rate limit
+          setTimeout(attempt, delay);
+        });
+    }
+    attempt();
+  });
 }
 
-/* Header Styling */
-h1 {
-  font-size: 2.5rem;
-  text-align: center;
-  color: #ffffff; /* White color for main heading */
-  text-transform: uppercase;
-  font-weight: bold;
-  letter-spacing: 0.1em;
-  margin-bottom: 25px;
-  text-shadow: 2px 2px 8px rgba(255, 255, 255, 0.2);
-}
-
-/* Single Username Lookup Section */
-.section {
-  margin-bottom: 30px;
-}
-
-.section label {
-  display: block;
-  font-size: 1.1rem;
-  margin-bottom: 10px;
-  color: #ffffff;
-}
-
-input[type="text"] {
-  padding: 12px 15px;
-  font-size: 1rem;
-  width: 100%;
-  border: 1px solid #444444; /* Darker gray border */
-  border-radius: 8px;
-  margin-bottom: 15px;
-  background-color: #2a2a2a; /* Slightly lighter gray background */
-  color: #ffffff;
-  outline: none;
-  transition: border-color 0.3s ease;
-}
-
-input[type="text"]:focus {
-  border-color: #ffffff; /* White border on focus */
-}
-
-/* Buttons Styling */
-button {
-  padding: 12px 25px;
-  background-color: #1e1e1e; /* Dark background inside the button */
-  border: 2px solid transparent; /* Initial border */
-  color: #ffffff;
-  font-size: 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-button:hover {
-  background-color: #333333; /* Slightly lighter on hover */
-  transform: translateY(-2px);
-}
-
-button:active {
-  transform: translateY(0);
-}
-
-button:disabled {
-  background-color: #1e1e1e; /* Same as inside color */
-  border: 2px solid #555555; /* Dark gray border for disabled state */
-  color: #999999; /* Lighter text color for disabled state */
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* Button States for Flat and Active Appearance */
-button.flat {
-  box-shadow: none;
-  transform: none;
-}
-
-button.active {
-  border-color: #00bfff; /* Blue outline for active buttons */
-}
-
-button.active:hover {
-  background-color: #333333; /* Maintain hover effect */
-}
-
-/* Launch Scan Button Specific Styles */
-#launch-scan.flat {
-  border: 2px solid transparent;
-}
-
-#launch-scan.active {
-  border: 2px solid #00bfff;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 191, 255, 0.5);
-}
-
-/* Specific Styles for Disabled "Launch Scan" Button */
-button#launch-scan:disabled {
-  border: 2px solid #555555; /* Dark gray border */
-}
-
-/* Scan Settings Section */
-.scan-settings {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.options-left {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  max-width: 45%;
-}
-
-.options-left label {
-  font-size: 1rem;
-  margin-bottom: 12px;
-  color: #ffffff;
-}
-
-.buttons-row {
-  display: flex;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.warning-message {
-  color: #ffcc00; /* Amber color for warnings */
-  font-size: 0.95rem;
-  margin-top: 10px;
-  text-align: center;
-}
-
-/* Progress Bar Section */
-.progress-section {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 40px;
-}
-
-.progress-bar {
-  background-color: #333333; /* Dark gray for progress bar background */
-  width: 80%; /* Fixed size */
-  border-radius: 8px;
-  height: 25px;
-  overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.progress-bar-inner {
-  height: 100%;
-  background: linear-gradient(90deg, #00bfff, #1a1aff); /* Gradient for progress */
-  width: 0%;
-  transition: width 0.4s ease;
-}
-
-.progress-text {
-  font-size: 1.2rem;
-  color: #ffffff;
-  margin-left: 20px;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-}
-
-/* Output Section */
-.output-section {
-  /* Removed overflow to eliminate outer scrolling */
-}
-
-.output {
-  margin-top: 40px;
-  padding: 20px;
-  background-color: #2a2a2a; /* Dark gray background for output */
-  color: #ffffff; /* White text */
-  height: 300px;
-  overflow-y: auto; /* Single scrollable container */
-  border-radius: 8px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
-  font-family: 'Courier New', Courier, monospace; /* Monospaced font for readability */
-}
-
-.output span {
-  display: block;
-  margin-bottom: 12px; /* Reduced spacing */
-  font-size: 1rem;
-}
-
-/* Specific Classes for Output */
-.available {
-  color: #00ff85; /* Green color for available usernames */
-}
-
-.claimed {
-  color: #ff4d4d; /* Red color for claimed usernames */
-}
-
-.error {
-  color: #ff4d4d; /* Red color for errors */
-}
-
-/* Save Output Wrapper */
-.save-output-wrapper {
-  display: flex;
-  justify-content: flex-start; /* Align to the left */
-  align-items: center;
-  margin-top: 15px; /* Padding between output box and button */
-}
-
-.save-output-wrapper button {
-  padding: 12px 25px;
-  background-color: #1e1e1e; /* Dark background inside the button */
-  border: 2px solid transparent; /* Initial border */
-  color: #ffffff;
-  font-size: 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-.save-output-wrapper button:hover {
-  background-color: #333333; /* Slightly lighter on hover */
-  transform: translateY(-2px);
-}
-
-.save-output-wrapper button:active {
-  transform: translateY(0);
-}
-
-.save-output-wrapper button:disabled {
-  background-color: #1e1e1e; /* Same as inside color */
-  border: 2px solid #555555; /* Dark gray border for disabled state */
-  color: #999999; /* Lighter text color for disabled state */
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* Button States for Flat and Active Appearance */
-.save-output-wrapper button.flat {
-  box-shadow: none;
-  transform: none;
-}
-
-.save-output-wrapper button.active {
-  border-color: #00bfff; /* Blue outline for active buttons */
-}
-
-.save-output-wrapper button.active:hover {
-  background-color: #333333; /* Maintain hover effect */
-}
-
-/* Save Output Button Specific Styles */
-#save-output.flat {
-  border: 2px solid transparent;
-}
-
-#save-output.active {
-  border: 2px solid #00bfff;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 191, 255, 0.5);
-}
-
-.save-message {
-  margin-left: 10px; /* Distance between button and message text */
-  font-size: 0.95rem;
-  color: #00ff85; /* Green color for success messages */
-}
-
-/* Message Styling */
-.error-message {
-  color: #ff4d4d; /* Red for errors */
-  font-size: 0.95rem;
-  margin-top: 10px;
-  text-align: center;
-}
-
-.success-message {
-  color: #00ff85; /* Green for success */
-  font-size: 0.95rem;
-  margin-top: 10px;
-  text-align: center;
-}
-
-.warning-message {
-  color: #ffcc00; /* Amber color for warnings */
-  font-size: 0.95rem;
-  margin-top: 10px;
-  text-align: center;
-}
-
-/* Select Box and Checkboxes Styling */
-select {
-  padding: 10px;
-  margin-top: 15px;
-  margin-bottom: 15px;
-  background-color: #4a4a4a; /* Dark gray for select box */
-  color: #ffffff; /* White text */
-  border: 2px solid #555555; /* Dark gray border */
-  border-radius: 8px;
-  box-shadow: 0 0 5px #555555; /* Reduced blur and changed color to dark gray */
-  appearance: none; /* Remove default arrow */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23ffffff" d="M6 9l5-5H1z"/></svg>');
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 12px 12px;
-}
-
-input[type="checkbox"] {
-  transform: scale(1.2);
-  margin-right: 8px;
-  accent-color: #00bfff; /* Blue color for checkboxes */
-}
-
-@media (max-width: 768px) {
-  .scan-settings {
-    flex-direction: column;
-    align-items: center;
+// Scan Function
+async function launchScan() {
+  if (scanning) {
+    errorMessage.textContent = "A scan is already in progress.";
+    return;
   }
 
-  .options-left {
-    max-width: 100%;
+  // Disable individual username search during scan
+  checkButton.disabled = true;
+  checkButton.classList.add('flat');
+  checkButton.classList.remove('active');
+
+  const includeLetters = includeLettersCheckbox.checked;
+  const includeNumbers = includeNumbersCheckbox.checked;
+  const includeUnderscore = includeUnderscoreCheckbox.checked;
+  const length = parseInt(usernameLengthSelect.value);
+  const includeClaimed = includeClaimedCheckbox.checked;
+
+  // Warning for large scans
+  if (length > 5) {
+    warningMessage.textContent = "Warning: Scanning usernames longer than 5 characters may take a significant amount of time and resources.";
+  } else {
+    warningMessage.textContent = "";
   }
 
-  .buttons-row {
-    justify-content: center;
+  if (length < 1 || length > 16) {
+    errorMessage.textContent = "Username length must be between 1 and 16.";
+    return;
   }
 
-  .progress-section {
-    flex-direction: column;
+  if (!includeLetters && !includeNumbers && !includeUnderscore) {
+    errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
+    return;
   }
 
-  .progress-text {
-    margin-left: 0;
-    margin-top: 10px;
+  const totalPossibleUsernames = estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore);
+
+  // Warn the user if the number of usernames is extremely large
+  if (length === 16 && totalPossibleUsernames > 1e+6) { // Example threshold
+    warningMessage.textContent += " Additionally, scanning a very large number of usernames may take a very long time.";
   }
 
-  .save-output-wrapper {
-    justify-content: flex-start; /* Align to the left on smaller screens */
+  errorMessage.textContent = "";
+  // Warning message already set above
+
+  const usernameGenerator = generateUsernames(length, includeLetters, includeNumbers, includeUnderscore);
+
+  scanData = {
+    generator: usernameGenerator,
+    total: totalPossibleUsernames,
+    scanned: 0,
+    startTime: Date.now(),
+    pausedTime: 0,
+  };
+
+  outputDiv.innerHTML = '';
+  progressBarInner.style.width = '0%';
+  progressText.textContent = `0/${scanData.total}`;
+  estimatedTimeLabel.textContent = `Estimated time: 0h 0m 0s`;
+
+  scanning = true;
+  paused = false;
+  totalPausedTime = 0;
+
+  // Update button states
+  pauseScanButton.disabled = false;
+  stopScanButton.disabled = false;
+
+  // Animate buttons to "Active" state
+  pauseScanButton.classList.remove('flat');
+  pauseScanButton.classList.add('active');
+  stopScanButton.classList.remove('flat');
+  stopScanButton.classList.add('active');
+
+  // Make Launch Scan button inactive
+  launchScanButton.disabled = true;
+  launchScanButton.classList.remove('active');
+  launchScanButton.classList.add('flat');
+
+  scanNextUsername(includeClaimed);
+}
+
+launchScanButton.addEventListener('click', launchScan);
+
+// Scan Next Username Function
+async function scanNextUsername(includeClaimed) {
+  if (!scanning || paused || scanData.scanned >= scanData.total) {
+    if (scanData.scanned >= scanData.total) {
+      // Scan complete
+      scanning = false;
+      pauseScanButton.disabled = true;
+      stopScanButton.disabled = true;
+      warningMessage.textContent = "Scan complete.";
+
+      // Animate buttons back to "2D"
+      pauseScanButton.classList.add('flat');
+      pauseScanButton.classList.remove('active');
+      stopScanButton.classList.add('flat');
+      stopScanButton.classList.remove('active');
+
+      // Re-enable Launch Scan button
+      launchScanButton.disabled = false;
+      launchScanButton.classList.remove('flat');
+      launchScanButton.classList.add('active');
+
+      // Re-enable individual username search
+      checkButton.disabled = false;
+      checkButton.classList.remove('flat');
+      checkButton.classList.add('active');
+    }
+    return;
+  }
+
+  const { value: username, done } = scanData.generator.next();
+
+  if (done) {
+    // Scan complete
+    scanning = false;
+    pauseScanButton.disabled = true;
+    stopScanButton.disabled = true;
+    warningMessage.textContent = "Scan complete.";
+
+    // Animate buttons back to "2D"
+    pauseScanButton.classList.add('flat');
+    pauseScanButton.classList.remove('active');
+    stopScanButton.classList.add('flat');
+    stopScanButton.classList.remove('active');
+
+    // Re-enable Launch Scan button
+    launchScanButton.disabled = false;
+    launchScanButton.classList.remove('flat');
+    launchScanButton.classList.add('active');
+
+    // Re-enable individual username search
+    checkButton.disabled = false;
+    checkButton.classList.remove('flat');
+    checkButton.classList.add('active');
+    return;
+  }
+
+  const proxyUrl = "https://web-production-787c.up.railway.app/";
+  const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
+
+  try {
+    const data = await fetchWithRetry(proxyUrl + apiUrl);
+
+    if (data === null) {
+      // Username is available
+      outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
+    } else if (data && data.id) {
+      if (includeClaimed) {
+        // Username is claimed
+        outputDiv.innerHTML += `<span class="claimed">${username} is claimed - ${data.id}</span>`;
+      }
+      // If includeClaimed is not checked, do not display claimed usernames
+    }
+
+    scanData.scanned++;
+    updateProgress();
+
+    // Scroll to bottom to show the latest result
+    outputDiv.scrollTop = outputDiv.scrollHeight;
+
+    // Proceed to the next username asynchronously to keep the UI responsive
+    setTimeout(() => scanNextUsername(includeClaimed), 0);
+  } catch (error) {
+    // This catch block should rarely be reached due to retries in fetchWithRetry
+    scanData.scanned++;
+    updateProgress();
+    setTimeout(() => scanNextUsername(includeClaimed), 0);
   }
 }
+
+// Update Progress Function
+function updateProgress() {
+  const progress = (scanData.scanned / scanData.total) * 100;
+  progressBarInner.style.width = `${progress}%`;
+  progressText.textContent = `${scanData.scanned}/${scanData.total}`;
+
+  // Calculate estimated time remaining
+  const now = Date.now();
+  const elapsedTime = (now - scanData.startTime - scanData.pausedTime) / 1000; // in seconds
+  const averageTimePerScan = scanData.scanned > 0 ? elapsedTime / scanData.scanned : 0;
+  const estimatedTotalTime = averageTimePerScan * scanData.total;
+  const estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
+
+  // Format ETA based on conditions
+  let formattedETA = formatTime(estimatedTimeRemaining);
+  if (estimatedTimeRemaining > 36000) { // Above 10 hours
+    const hours = Math.floor(estimatedTimeRemaining / 3600);
+    formattedETA = `${hours}h`;
+  }
+  if (estimatedTimeRemaining > 3.6e6) { // Above 1000 hours
+    formattedETA = `${(estimatedTimeRemaining / 3.6e6).toExponential(2)}h`;
+  }
+
+  estimatedTimeLabel.textContent = `Estimated time: ${formattedETA}`;
+}
+
+// Format Time Function
+function formatTime(seconds) {
+  if (seconds < 0 || isNaN(seconds)) {
+    return '0h 0m 0s';
+  }
+  const hours = Math.floor(seconds / 3600);
+  seconds = seconds % 3600;
+  const minutes = Math.floor(seconds / 60);
+  const sec = Math.floor(seconds % 60);
+  return `${hours}h ${minutes}m ${sec}s`;
+}
+
+// Pause and Resume Functions
+function pauseScan() {
+  paused = true;
+  pauseScanButton.textContent = 'Resume';
+  warningMessage.textContent = "Scan paused.";
+}
+
+function resumeScan() {
+  paused = false;
+  pauseScanButton.textContent = 'Pause';
+  warningMessage.textContent = "Scan resumed.";
+  scanNextUsername(includeClaimedCheckbox.checked);
+}
+
+pauseScanButton.addEventListener('click', () => {
+  if (paused) resumeScan();
+  else pauseScan();
+});
+
+// Stop Scan Function
+function stopScan() {
+  scanning = false;
+  paused = false;
+  pauseScanButton.disabled = true;
+  stopScanButton.disabled = true;
+  pauseScanButton.textContent = 'Pause';
+  progressBarInner.style.width = '0%';
+  progressText.textContent = '0/0';
+  estimatedTimeLabel.textContent = 'Estimated time: 0h 0m 0s';
+  warningMessage.textContent = "Scan stopped.";
+
+  // Animate buttons back to "2D"
+  pauseScanButton.classList.add('flat');
+  pauseScanButton.classList.remove('active');
+  stopScanButton.classList.add('flat');
+  stopScanButton.classList.remove('active');
+
+  // Re-enable Launch Scan button
+  launchScanButton.disabled = false;
+  launchScanButton.classList.remove('flat');
+  launchScanButton.classList.add('active');
+
+  // Re-enable individual username search
+  checkButton.disabled = false;
+  checkButton.classList.remove('flat');
+  checkButton.classList.add('active');
+}
+
+stopScanButton.addEventListener('click', stopScan);
+
+// Generate Usernames Generator Function
+function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
+  let chars = [];
+  if (includeLetters) chars = chars.concat('abcdefghijklmnopqrstuvwxyz'.split(''));
+  if (includeNumbers) chars = chars.concat('0123456789'.split(''));
+  if (includeUnderscore) chars.push('_');
+
+  if (chars.length === 0) {
+    errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
+    return (function* () {})(); // Empty generator
+  }
+
+  function* generator() {
+    const totalCombinations = Math.pow(chars.length, length);
+    for (let i = 0; i < totalCombinations; i++) {
+      let num = i;
+      let username = '';
+      for (let j = 0; j < length; j++) {
+        username = chars[num % chars.length] + username;
+        num = Math.floor(num / chars.length);
+      }
+      yield username;
+    }
+  }
+
+  return generator();
+}
+
+// Estimate Total Usernames Function
+function estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
+  let charsCount = 0;
+  if (includeLetters) charsCount += 26;
+  if (includeNumbers) charsCount += 10;
+  if (includeUnderscore) charsCount += 1;
+  return Math.pow(charsCount, length);
+}
+
+// Save Output Function
+function saveOutput() {
+  const content = outputDiv.innerText;
+  if (content.trim() === '') {
+    saveMessage.textContent = 'Textbox is empty. Nothing to save.';
+    saveMessage.style.color = '#ff4d4d'; // Red color for error
+    return;
+  }
+  const currentTime = new Date();
+  const filename = currentTime.toISOString().replace(/[:.]/g, '-') + '_Output.txt';
+  const fileBlob = new Blob([content], { type: 'text/plain' });
+
+  const downloadLink = document.createElement('a');
+  downloadLink.href = URL.createObjectURL(fileBlob);
+  downloadLink.download = filename;
+  downloadLink.click();
+
+  saveMessage.textContent = 'Output saved to file!';
+  saveMessage.style.color = '#00ff85'; // Green color for success
+}
+
+saveOutputButton.addEventListener('click', saveOutput);
