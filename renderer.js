@@ -103,6 +103,11 @@ async function launchScan() {
     return;
   }
 
+  // Disable individual username search during scan
+  checkButton.disabled = true;
+  checkButton.classList.add('flat');
+  checkButton.classList.remove('active');
+  
   const includeLetters = includeLettersCheckbox.checked;
   const includeNumbers = includeNumbersCheckbox.checked;
   const includeUnderscore = includeUnderscoreCheckbox.checked;
@@ -159,11 +164,16 @@ async function launchScan() {
   pauseScanButton.disabled = false;
   stopScanButton.disabled = false;
 
-  // Animate buttons to "3D" when scan starts
+  // Animate buttons to "Active" state
   pauseScanButton.classList.remove('flat');
-  pauseScanButton.classList.add('glow');
+  pauseScanButton.classList.add('active');
   stopScanButton.classList.remove('flat');
-  stopScanButton.classList.add('glow');
+  stopScanButton.classList.add('active');
+
+  // Make Launch Scan button inactive
+  launchScanButton.disabled = true;
+  launchScanButton.classList.remove('active');
+  launchScanButton.classList.add('flat');
 
   scanNextUsername(includeClaimed);
 }
@@ -182,9 +192,19 @@ async function scanNextUsername(includeClaimed) {
 
       // Animate buttons back to "2D"
       pauseScanButton.classList.add('flat');
-      pauseScanButton.classList.remove('glow');
+      pauseScanButton.classList.remove('active');
       stopScanButton.classList.add('flat');
-      stopScanButton.classList.remove('glow');
+      stopScanButton.classList.remove('active');
+
+      // Re-enable Launch Scan button
+      launchScanButton.disabled = false;
+      launchScanButton.classList.remove('flat');
+      launchScanButton.classList.add('active');
+
+      // Re-enable individual username search
+      checkButton.disabled = false;
+      checkButton.classList.remove('flat');
+      checkButton.classList.add('active');
     }
     return;
   }
@@ -200,9 +220,19 @@ async function scanNextUsername(includeClaimed) {
 
     // Animate buttons back to "2D"
     pauseScanButton.classList.add('flat');
-    pauseScanButton.classList.remove('glow');
+    pauseScanButton.classList.remove('active');
     stopScanButton.classList.add('flat');
-    stopScanButton.classList.remove('glow');
+    stopScanButton.classList.remove('active');
+
+    // Re-enable Launch Scan button
+    launchScanButton.disabled = false;
+    launchScanButton.classList.remove('flat');
+    launchScanButton.classList.add('active');
+
+    // Re-enable individual username search
+    checkButton.disabled = false;
+    checkButton.classList.remove('flat');
+    checkButton.classList.add('active');
     return;
   }
 
@@ -281,14 +311,13 @@ function formatTime(seconds) {
 function pauseScan() {
   paused = true;
   pauseScanButton.textContent = 'Resume';
+  warningMessage.textContent = "Scan paused.";
 }
 
 function resumeScan() {
   paused = false;
   pauseScanButton.textContent = 'Pause';
-  // Calculate paused duration and add to scanData.pausedTime
-  const pausedDuration = Date.now() - pauseStartTime;
-  scanData.pausedTime += pausedDuration;
+  warningMessage.textContent = "Scan resumed.";
   scanNextUsername(includeClaimedCheckbox.checked);
 }
 
@@ -311,9 +340,19 @@ function stopScan() {
 
   // Animate buttons back to "2D"
   pauseScanButton.classList.add('flat');
-  pauseScanButton.classList.remove('glow');
+  pauseScanButton.classList.remove('active');
   stopScanButton.classList.add('flat');
-  stopScanButton.classList.remove('glow');
+  stopScanButton.classList.remove('active');
+
+  // Re-enable Launch Scan button
+  launchScanButton.disabled = false;
+  launchScanButton.classList.remove('flat');
+  launchScanButton.classList.add('active');
+
+  // Re-enable individual username search
+  checkButton.disabled = false;
+  checkButton.classList.remove('flat');
+  checkButton.classList.add('active');
 }
 
 stopScanButton.addEventListener('click', stopScan);
