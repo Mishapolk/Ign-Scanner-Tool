@@ -129,7 +129,7 @@ async function launchScan() {
   const totalPossibleUsernames = estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore);
 
   // Warn the user if the number of usernames is extremely large
-  if (length === 16 && totalPossibleUsernames > 1e+6) { // Example threshold
+  if (totalPossibleUsernames > 1e+6) { // Example threshold for warning
     warningMessage.textContent += " Additionally, scanning a very large number of usernames may take a very long time.";
   }
 
