@@ -161,7 +161,9 @@ async function launchScan() {
 
   // Animate buttons to "3D" when scan starts
   pauseScanButton.classList.remove('flat');
+  pauseScanButton.classList.add('glow');
   stopScanButton.classList.remove('flat');
+  stopScanButton.classList.add('glow');
 
   scanNextUsername(includeClaimed);
 }
@@ -177,7 +179,9 @@ async function scanNextUsername(includeClaimed) {
 
       // Animate buttons back to "2D"
       pauseScanButton.classList.add('flat');
+      pauseScanButton.classList.remove('glow');
       stopScanButton.classList.add('flat');
+      stopScanButton.classList.remove('glow');
     }
     return;
   }
@@ -193,7 +197,9 @@ async function scanNextUsername(includeClaimed) {
 
     // Animate buttons back to "2D"
     pauseScanButton.classList.add('flat');
+    pauseScanButton.classList.remove('glow');
     stopScanButton.classList.add('flat');
+    stopScanButton.classList.remove('glow');
     return;
   }
 
@@ -249,7 +255,7 @@ function updateProgress() {
     formattedETA = `${hours}h`;
   }
   if (estimatedTimeRemaining > 3.6e6) { // Above 1000 hours
-    formattedETA = `${estimatedTimeRemaining / 3.6e6}e+3h`;
+    formattedETA = `${(estimatedTimeRemaining / 3.6e6).toExponential(2)}h`;
   }
 
   estimatedTimeLabel.textContent = `Estimated time: ${formattedETA}`;
@@ -299,7 +305,9 @@ function stopScan() {
 
   // Animate buttons back to "2D"
   pauseScanButton.classList.add('flat');
+  pauseScanButton.classList.remove('glow');
   stopScanButton.classList.add('flat');
+  stopScanButton.classList.remove('glow');
 }
 
 stopScanButton.addEventListener('click', stopScan);
