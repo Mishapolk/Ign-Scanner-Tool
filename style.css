@@ -30,6 +30,21 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Header Section Styling */
+.header-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 30px; /* Space below the header image */
+}
+
+.header-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px; /* Rounded corners for the image */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* Subtle shadow for depth */
+}
+
 /* Header Styling */
 h1 {
   font-size: 2.5rem;
