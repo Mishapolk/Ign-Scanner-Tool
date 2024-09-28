@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Minecraft Username Checker</title>
+  <!-- Import Source Code Pro Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -10,11 +12,9 @@
     <!-- Single Username Lookup Section -->
     <div class="section">
       <h1>Minecraft Username Checker</h1>
-      <div class="lookup">
-        <label for="username">Enter Minecraft Username:</label>
-        <input type="text" id="username" maxlength="16" placeholder="Enter Minecraft Username">
-        <button id="check-username">Check Username</button>
-      </div>
+      <label for="username">Enter Minecraft Username:</label>
+      <input type="text" id="username" maxlength="16" placeholder="Enter Minecraft Username">
+      <button id="check-username">Check Username</button>
       <span id="error-message" class="error-message"></span>
     </div>
 
@@ -22,9 +22,7 @@
     <div class="section scan-settings">
       <div class="options-left">
         <label for="username-length">Username Length:</label>
-        <select id="username-length">
-          <!-- Options will be populated by JavaScript -->
-        </select>
+        <select id="username-length"></select>
 
         <label><input type="checkbox" id="include-claimed" checked> Include claimed</label>
         <label><input type="checkbox" id="include-letters" checked> Include letters</label>
@@ -55,7 +53,7 @@
     </div>
 
     <!-- Save Output Section -->
-    <div class="section">
+    <div class="section save-output-section">
       <button id="save-output">Save Output to File</button>
       <span id="save-message"></span>
     </div>
