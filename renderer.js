@@ -37,12 +37,12 @@ for (let i = 1; i <= 16; i++) {
 // Single Username Lookup Function
 function checkUsername() {
   const username = usernameInput.value.trim();
-  if (username.length > 16 || username.length === 0) {
-    errorMessage.textContent = "A username must be between 1 and 16 characters long";
+  if (username.length === 0 || username.length > 16) {
+    errorMessage.textContent = "A username must be between 1 and 16 characters long.";
     return;
   }
   if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-    errorMessage.textContent = "The username cannot contain any special characters";
+    errorMessage.textContent = "The username cannot contain any special characters.";
     return;
   }
   errorMessage.textContent = "";
@@ -128,17 +128,8 @@ async function launchScan() {
 
   const totalPossibleUsernames = estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore);
 
-  // Remove the cap to allow scanning up to 16 characters
-  /*
-  const maxUsernames = 100000;
-  if (totalPossibleUsernames > maxUsernames) {
-    errorMessage.textContent = `Scanning ${totalPossibleUsernames} usernames may cause performance issues. Please choose a shorter username length or reduce character options.`;
-    return;
-  }
-  */
-
-  // Instead of capping, warn the user
-  if (totalPossibleUsernames > 1e+6) { // Example threshold for warning
+  // Warn the user if the number of usernames is extremely large
+  if (length === 16 && totalPossibleUsernames > 1e+6) { // Example threshold
     warningMessage.textContent += " Additionally, scanning a very large number of usernames may take a very long time.";
   }
 
