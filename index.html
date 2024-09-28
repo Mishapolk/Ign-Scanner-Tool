@@ -14,7 +14,7 @@
       <h1>Minecraft Username Checker</h1>
       <label for="username">Enter Minecraft Username:</label>
       <input type="text" id="username" maxlength="16" placeholder="Enter Minecraft Username">
-      <button id="check-username">Check Username</button>
+      <button id="check-username" class="active">Check Username</button>
       <span id="error-message" class="error-message"></span>
     </div>
 
@@ -31,7 +31,7 @@
         <span id="warning-message" class="warning-message"></span>
 
         <div class="buttons-row">
-          <button id="launch-scan">Launch Scan</button>
+          <button id="launch-scan" class="active">Launch Scan</button>
           <button id="pause-scan" disabled class="flat" aria-disabled="true">Pause</button>
           <button id="stop-scan" disabled class="flat" aria-disabled="true">Stop Scan</button>
         </div>
@@ -54,7 +54,7 @@
 
     <!-- Save Output Section -->
     <div class="section save-output-section">
-      <button id="save-output">Save Output to File</button>
+      <button id="save-output" class="active">Save Output to File</button>
       <span id="save-message"></span>
     </div>
   </div>
