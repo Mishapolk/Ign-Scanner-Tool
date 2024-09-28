@@ -54,15 +54,15 @@ function checkUsername() {
   fetchWithRetry(proxyUrl + apiUrl)
     .then((data) => {
       if (data === null || (data && data.errorMessage && data.errorMessage.includes("Couldn't find any profile with name"))) {
-        outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
+        outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
       } else if (data && data.id) {
-        outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
+        outputDiv.innerHTML += `<span class="claimed">${username} is claimed - ${data.id}</span>`;
       } else {
-        outputDiv.innerHTML += `<span style="color:red;">Error: Unexpected response</span><br>`;
+        outputDiv.innerHTML += `<span class="error">Error: Unexpected response</span>`;
       }
     })
     .catch((error) => {
-      outputDiv.innerHTML += `<span style="color:red;">Error: ${error}</span><br>`;
+      outputDiv.innerHTML += `<span class="error">Error: ${error}</span>`;
     });
 }
 
@@ -129,7 +129,7 @@ async function launchScan() {
   const totalPossibleUsernames = estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore);
 
   // Warn the user if the number of usernames is extremely large
-  if (totalPossibleUsernames > 1e+6) { // Example threshold for warning
+  if (length === 16 && totalPossibleUsernames > 1e+6) { // Example threshold
     warningMessage.textContent += " Additionally, scanning a very large number of usernames may take a very long time.";
   }
 
@@ -154,9 +154,14 @@ async function launchScan() {
   scanning = true;
   paused = false;
   totalPausedTime = 0;
-  pauseScanButton.textContent = 'Pause';
+
+  // Update button states
   pauseScanButton.disabled = false;
   stopScanButton.disabled = false;
+
+  // Animate buttons to "3D" when scan starts
+  pauseScanButton.classList.remove('flat');
+  stopScanButton.classList.remove('flat');
 
   scanNextUsername(includeClaimed);
 }
@@ -169,6 +174,10 @@ async function scanNextUsername(includeClaimed) {
       pauseScanButton.disabled = true;
       stopScanButton.disabled = true;
       warningMessage.textContent = "Scan complete.";
+
+      // Animate buttons back to "2D"
+      pauseScanButton.classList.add('flat');
+      stopScanButton.classList.add('flat');
     }
     return;
   }
@@ -181,6 +190,10 @@ async function scanNextUsername(includeClaimed) {
     pauseScanButton.disabled = true;
     stopScanButton.disabled = true;
     warningMessage.textContent = "Scan complete.";
+
+    // Animate buttons back to "2D"
+    pauseScanButton.classList.add('flat');
+    stopScanButton.classList.add('flat');
     return;
   }
 
@@ -192,11 +205,11 @@ async function scanNextUsername(includeClaimed) {
 
     if (data === null) {
       // Username is available
-      outputDiv.innerHTML += `<span style="color:green;">${username} is available</span><br>`;
+      outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
     } else if (data && data.id) {
       if (includeClaimed) {
         // Username is claimed
-        outputDiv.innerHTML += `<span style="color:red;">${username} is claimed - ${data.id}</span><br>`;
+        outputDiv.innerHTML += `<span class="claimed">${username} is claimed - ${data.id}</span>`;
       }
       // If includeClaimed is not checked, do not display claimed usernames
     }
@@ -228,7 +241,18 @@ function updateProgress() {
   const averageTimePerScan = scanData.scanned > 0 ? elapsedTime / scanData.scanned : 0;
   const estimatedTotalTime = averageTimePerScan * scanData.total;
   const estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
-  estimatedTimeLabel.textContent = `Estimated time: ${formatTime(estimatedTimeRemaining)}`;
+
+  // Format ETA based on conditions
+  let formattedETA = formatTime(estimatedTimeRemaining);
+  if (estimatedTimeRemaining > 36000) { // Above 10 hours
+    const hours = Math.floor(estimatedTimeRemaining / 3600);
+    formattedETA = `${hours}h`;
+  }
+  if (estimatedTimeRemaining > 3.6e6) { // Above 1000 hours
+    formattedETA = `${estimatedTimeRemaining / 3.6e6}e+3h`;
+  }
+
+  estimatedTimeLabel.textContent = `Estimated time: ${formattedETA}`;
 }
 
 function formatTime(seconds) {
@@ -246,7 +270,6 @@ function formatTime(seconds) {
 function pauseScan() {
   paused = true;
   pauseScanButton.textContent = 'Resume';
-  pauseStartTime = Date.now();
 }
 
 function resumeScan() {
@@ -273,10 +296,13 @@ function stopScan() {
   progressText.textContent = '0/0';
   estimatedTimeLabel.textContent = 'Estimated time: 0h 0m 0s';
   warningMessage.textContent = "Scan stopped.";
+
+  // Animate buttons back to "2D"
+  pauseScanButton.classList.add('flat');
+  stopScanButton.classList.add('flat');
 }
 
 stopScanButton.addEventListener('click', stopScan);
-launchScanButton.addEventListener('click', launchScan);
 
 // Generate Usernames Generator Function
 function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
@@ -320,7 +346,7 @@ function saveOutput() {
   const content = outputDiv.innerText;
   if (content.trim() === '') {
     saveMessage.textContent = 'Textbox is empty. Nothing to save.';
-    saveMessage.style.color = 'red';
+    saveMessage.style.color = '#ff4d4d'; // Red color for error
     return;
   }
   const currentTime = new Date();
@@ -333,7 +359,7 @@ function saveOutput() {
   downloadLink.click();
 
   saveMessage.textContent = 'Output saved to file!';
-  saveMessage.style.color = 'green';
+  saveMessage.style.color = '#00ff85'; // Green color for success
 }
 
 saveOutputButton.addEventListener('click', saveOutput);
