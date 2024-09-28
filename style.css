@@ -286,7 +286,7 @@ select {
   margin-bottom: 15px;
   background-color: #4a4a4a; /* Dark gray for select box */
   color: #ffffff; /* White text */
-  border: 2px solid #888888; /* Changed to gray */
+  border: 2px solid #888888; /* Gray border */
   border-radius: 8px;
   box-shadow: 0 0 5px #888888; /* Reduced blur and changed color to gray */
   appearance: none; /* Remove default arrow */
@@ -301,7 +301,7 @@ select {
 input[type="checkbox"] {
   transform: scale(1.2);
   margin-right: 8px;
-  accent-color: #888888; /* Changed to gray */
+  accent-color: #00bfff; /* Blue color for checkboxes */
 }
 
 @media (max-width: 768px) {
