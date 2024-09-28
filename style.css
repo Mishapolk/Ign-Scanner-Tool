@@ -191,7 +191,7 @@ button.active:hover {
 
 /* Output Section */
 .output-section {
-  /* No additional styles needed */
+  /* Removed overflow to eliminate outer scrolling */
 }
 
 .output {
@@ -284,6 +284,11 @@ button.active:hover {
 #save-output.active {
   border: 2px solid #00bfff;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 191, 255, 0.5);
+}
+
+/* Specific Styles for Disabled "Launch Scan" Button */
+button#launch-scan:disabled {
+  border: 2px solid #555555; /* Dark gray border */
 }
 
 /* Message Styling */
