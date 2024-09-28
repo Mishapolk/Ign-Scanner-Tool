@@ -1,86 +1,101 @@
 /* Reset some basic elements */
 * {
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
 body {
+  background-color: #121212; /* Deep black background */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #1e3c72, #2a5298);
-  color: #ffffff;
+  color: #e0e0e0; /* Light gray text for better contrast */
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
 }
 
 .container {
-  background-color: rgba(0, 0, 0, 0.8);
-  padding: 30px;
-  border-radius: 15px;
-  width: 90%;
-  max-width: 900px;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  backdrop-filter: blur(8.5px);
-  -webkit-backdrop-filter: blur(8.5px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  max-width: 1200px;
+  width: 100%;
+  padding: 25px;
+  background-color: #1e1e1e; /* Dark gray container */
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.section {
-  margin-bottom: 25px;
-}
-
+/* Header Styling */
 h1 {
+  font-size: 2.5rem;
   text-align: center;
-  margin-bottom: 20px;
-  font-size: 2.5em;
-  color: #ffffff;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+  color: #ffffff; /* White color for main heading */
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  margin-bottom: 25px;
+  text-shadow: 2px 2px 8px rgba(255, 255, 255, 0.2);
 }
 
-.lookup {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* Single Username Lookup Section */
+.section {
+  margin-bottom: 30px;
 }
 
-.lookup label {
-  font-size: 1.2em;
+.section label {
+  display: block;
+  font-size: 1.1rem;
   margin-bottom: 10px;
+  color: #ffffff;
 }
 
-.lookup input[type="text"] {
+input[type="text"] {
   padding: 12px 15px;
-  font-size: 1em;
-  width: 80%;
-  border: none;
+  font-size: 1rem;
+  width: 100%;
+  border: 1px solid #444444; /* Darker gray border */
   border-radius: 8px;
   margin-bottom: 15px;
+  background-color: #2a2a2a; /* Slightly lighter gray background */
+  color: #ffffff;
   outline: none;
+  transition: border-color 0.3s ease;
 }
 
-.lookup button {
+input[type="text"]:focus {
+  border-color: #ffffff; /* White border on focus */
+}
+
+/* Buttons Styling */
+button {
   padding: 12px 25px;
-  background-color: #28a745;
+  background-color: #3a3a3a; /* Medium gray background */
   border: none;
-  color: white;
-  font-size: 1.1em;
+  color: #ffffff;
+  font-size: 1rem;
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
-.lookup button:hover {
-  background-color: #218838;
+button:hover {
+  background-color: #575757; /* Lighter gray on hover */
   transform: translateY(-2px);
 }
 
-.lookup button:active {
+button:active {
   transform: translateY(0);
 }
 
+button:disabled {
+  background-color: #888888; /* Disabled state gray */
+  cursor: not-allowed;
+}
+
+/* Scan Settings Section */
 .scan-settings {
   display: flex;
   justify-content: space-between;
@@ -95,166 +110,135 @@ h1 {
 }
 
 .options-left label {
-  margin-bottom: 15px;
-  font-size: 1.1em;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-}
-
-.options-left input[type="checkbox"] {
-  transform: scale(1.2);
-  margin-right: 10px;
-}
-
-.options-left select {
-  padding: 10px 15px;
-  font-size: 1em;
-  margin-bottom: 15px;
-  border: none;
-  border-radius: 8px;
-  outline: none;
-  background-color: #343a40;
+  font-size: 1rem;
+  margin-bottom: 12px;
   color: #ffffff;
-}
-
-.warning-message {
-  color: #ffc107;
-  font-size: 0.95em;
-  margin-top: 10px;
-  text-align: center;
 }
 
 .buttons-row {
   display: flex;
   gap: 15px;
   margin-top: 20px;
-  justify-content: center;
 }
 
-.buttons-row button {
-  padding: 10px 20px;
-  background-color: #17a2b8;
-  border: none;
-  color: white;
-  font-size: 1em;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+.warning-message {
+  color: #ffcc00; /* Amber color for warnings */
+  font-size: 0.95rem;
+  margin-top: 10px;
 }
 
-.buttons-row button:hover {
-  background-color: #138496;
-  transform: translateY(-2px);
-}
-
-.buttons-row button:active {
-  transform: translateY(0);
-}
-
-.buttons-row button:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
+/* Progress Bar Section */
 .progress-section {
   display: flex;
-  align-items: center;
-  gap: 15px;
-  flex-wrap: wrap;
   justify-content: center;
-}
-
-.estimated-time {
-  font-size: 1.1em;
-  color: #ffffff;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+  align-items: center;
+  margin-top: 40px;
 }
 
 .progress-bar {
-  flex: 1;
-  background-color: #343a40;
-  border-radius: 10px;
-  overflow: hidden;
+  background-color: #333333; /* Dark gray for progress bar background */
+  width: 80%;
+  border-radius: 8px;
   height: 25px;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .progress-bar-inner {
   height: 100%;
-  background: linear-gradient(90deg, #28a745, #218838);
+  background: linear-gradient(90deg, #00bfff, #1a1aff); /* Kept as per user's preference */
   width: 0%;
   transition: width 0.4s ease;
 }
 
 .progress-text {
-  font-size: 1.1em;
+  font-size: 1.2rem;
   color: #ffffff;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+  margin-left: 20px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
+/* Output Section */
 .output {
-  width: 100%;
+  margin-top: 40px;
+  padding: 20px;
+  background-color: #2a2a2a; /* Dark gray background for output */
+  color: #ffffff; /* White text */
   height: 300px;
-  background-color: #212529;
-  color: #ffffff;
-  overflow-y: scroll;
-  padding: 15px;
-  border-radius: 10px;
-  font-family: 'Courier New', Courier, monospace;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+  overflow-y: auto;
+  border-radius: 8px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  font-family: 'Courier New', Courier, monospace; /* Monospaced font as per user's preference */
 }
 
-.error-message {
-  color: #dc3545;
-  font-size: 1em;
-  text-align: center;
+.output span {
   display: block;
-  margin-top: 10px;
+  margin-bottom: 12px;
+  font-size: 1rem;
 }
 
-.success-message {
-  color: #28a745;
-  font-size: 1em;
+/* Save Output Section */
+.save-output-section {
+  margin-top: 30px;
   text-align: center;
-  display: block;
-  margin-top: 10px;
 }
 
-.save-output {
+.save-output-section button {
   padding: 12px 25px;
-  background-color: #007bff;
+  background-color: #3a3a3a; /* Medium gray */
   border: none;
-  color: white;
-  font-size: 1.1em;
+  color: #ffffff;
+  font-size: 1rem;
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
-.save-output:hover {
-  background-color: #0069d9;
+.save-output-section button:hover {
+  background-color: #575757; /* Lighter gray on hover */
   transform: translateY(-2px);
 }
 
-.save-output:active {
+.save-output-section button:active {
   transform: translateY(0);
 }
 
-.save-output:disabled {
-  background-color: #6c757d;
+.save-output-section button:disabled {
+  background-color: #888888; /* Disabled state gray */
   cursor: not-allowed;
 }
 
-.save-message {
+.save-output-section span {
   display: block;
   margin-top: 10px;
-  font-size: 0.95em;
+  font-size: 0.95rem;
+  color: #00ff85; /* Green color for success messages */
+}
+
+/* Message Styling */
+.error-message {
+  color: #ff4d4d; /* Red for errors */
+  font-size: 0.95rem;
+  margin-top: 10px;
   text-align: center;
 }
 
+.success-message {
+  color: #00ff85; /* Green for success */
+  font-size: 0.95rem;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.warning-message {
+  color: #ffcc00; /* Amber color for warnings */
+  font-size: 0.95rem;
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
   .scan-settings {
     flex-direction: column;
@@ -263,24 +247,14 @@ h1 {
 
   .options-left {
     max-width: 100%;
-    align-items: center;
-  }
-
-  .buttons-row {
-    justify-content: center;
   }
 
   .progress-section {
     flex-direction: column;
-    align-items: center;
   }
 
   .progress-text {
     margin-left: 0;
     margin-top: 10px;
-  }
-
-  .lookup input[type="text"] {
-    width: 100%;
   }
 }
