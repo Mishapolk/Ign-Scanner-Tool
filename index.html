@@ -10,9 +10,11 @@
     <!-- Single Username Lookup Section -->
     <div class="section">
       <h1>Minecraft Username Checker</h1>
-      <label for="username">Enter Minecraft Username:</label>
-      <input type="text" id="username" maxlength="16" placeholder="Enter Minecraft Username">
-      <button id="check-username">Check Username</button>
+      <div class="lookup">
+        <label for="username">Enter Minecraft Username:</label>
+        <input type="text" id="username" maxlength="16" placeholder="Enter Minecraft Username">
+        <button id="check-username">Check Username</button>
+      </div>
       <span id="error-message" class="error-message"></span>
     </div>
 
@@ -20,7 +22,9 @@
     <div class="section scan-settings">
       <div class="options-left">
         <label for="username-length">Username Length:</label>
-        <select id="username-length"></select>
+        <select id="username-length">
+          <!-- Options will be populated by JavaScript -->
+        </select>
 
         <label><input type="checkbox" id="include-claimed" checked> Include claimed</label>
         <label><input type="checkbox" id="include-letters" checked> Include letters</label>
