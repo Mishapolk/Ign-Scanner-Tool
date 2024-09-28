@@ -6,9 +6,9 @@
 }
 
 body {
-  background-color: #1a1a1a; /* Dark grey background */
+  background-color: #1c1c1c; /* Dark gray background */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #ffffff;
+  color: #f0f0f0; /* Light gray text */
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -20,12 +20,14 @@ body {
   max-width: 1200px;
   width: 100%;
   padding: 20px;
+  background-color: #2c2c2c; /* Slightly lighter gray for the container */
+  border-radius: 10px;
 }
 
 h1 {
   font-size: 2.5rem;
   text-align: center;
-  color: #ffffff;
+  color: #ffffff; /* White text for the main heading */
   text-transform: uppercase;
   font-weight: bold;
   letter-spacing: 0.1em;
@@ -41,7 +43,7 @@ h1 {
 
 .navbar h1 {
   font-size: 2.5rem;
-  color: #ffffff;
+  color: #ffffff; /* White logo color */
 }
 
 .navbar ul {
@@ -53,12 +55,12 @@ h1 {
 .navbar ul li a {
   text-decoration: none;
   font-size: 1.2rem;
-  color: #e0e0e0; /* Light grey for links */
+  color: #cccccc; /* Light gray for nav links */
   transition: color 0.3s;
 }
 
 .navbar ul li a:hover {
-  color: #ffffff; /* White on hover */
+  color: #ffffff; /* Change to white on hover */
 }
 
 .main-content {
@@ -69,13 +71,13 @@ h1 {
 .text-content h2 {
   font-size: 3rem;
   font-weight: bold;
-  color: #ffffff;
+  color: #ffffff; /* White for the main title */
   text-transform: uppercase;
   margin-bottom: 40px;
 }
 
 .text-content h2 .highlight {
-  color: #bfbfbf; /* Grey for highlighted text */
+  color: #00bfff; /* Light blue for highlights */
 }
 
 .buttons {
@@ -87,21 +89,21 @@ h1 {
 
 .button {
   padding: 15px 40px;
-  background-color: #333333; /* Dark grey button background */
-  color: #ffffff;
+  background-color: #3a3a3a; /* Dark gray for buttons */
+  color: #ffffff; /* White text */
   text-decoration: none;
   font-size: 1.2rem;
-  border: 2px solid #4d4d4d; /* Medium grey border */
+  border: 2px solid #00bfff; /* Light blue border */
   border-radius: 8px;
   text-transform: uppercase;
   transition: all 0.3s ease;
-  box-shadow: 0 0 10px #333333;
+  box-shadow: 0 0 10px #00bfff; /* Blue glow effect */
 }
 
 .button:hover {
-  background-color: #4d4d4d; /* Lighter grey on hover */
-  color: #ffffff;
-  box-shadow: 0 0 15px #4d4d4d;
+  background-color: #00bfff; /* Change to light blue on hover */
+  color: #1c1c1c; /* Dark background text on hover */
+  box-shadow: 0 0 15px #00bfff, 0 0 30px #00bfff; /* Intensified glow */
 }
 
 .progress-section {
@@ -112,37 +114,35 @@ h1 {
 }
 
 .progress-bar {
-  background-color: #333333;
+  background-color: #4a4a4a; /* Dark gray for the progress bar background */
   width: 80%;
   border-radius: 8px;
   height: 25px;
   overflow: hidden;
-  box-shadow: inset 0 0 10px #00ff85;
 }
 
 .progress-bar-inner {
   height: 100%;
-  background: linear-gradient(90deg, #00ff85, #00bfff);
+  background: linear-gradient(90deg, #00bfff, #1a1aff); /* Gradient for the progress */
   width: 0%;
   transition: width 0.4s ease;
 }
 
 .progress-text {
   font-size: 1.5rem;
-  color: #ffffff;
+  color: #ffffff; /* White text for progress */
   margin-left: 20px;
 }
 
 .output {
   margin-top: 40px;
   padding: 20px;
-  background-color: #1a1a1a;
-  color: #e0e0e0; /* Light grey output text */
+  background-color: #3a3a3a; /* Dark gray for output box */
+  color: #ffffff; /* White text */
   height: 300px;
   overflow-y: auto;
   border-radius: 8px;
-  box-shadow: inset 0 0 10px #00ff85;
-  font-family: 'Courier New', Courier, monospace; /* Keeping font */
+  box-shadow: inset 0 0 10px #00bfff; /* Blue inset shadow */
 }
 
 .output span {
@@ -158,7 +158,7 @@ h1 {
 }
 
 .error-message {
-  color: #ff4d4d; /* Light red for errors */
+  color: #ff4d4d; /* Red for errors */
 }
 
 .success-message {
@@ -166,7 +166,7 @@ h1 {
 }
 
 .warning-message {
-  color: #ffd700; /* Gold for warnings */
+  color: #ffd700; /* Yellow for warnings */
 }
 
 select, input[type="text"], button {
@@ -182,38 +182,11 @@ select {
   padding: 10px;
   margin-top: 15px;
   margin-bottom: 15px;
-  background-color: #333333;
-  color: #ffffff;
-  border: 2px solid #4d4d4d;
+  background-color: #4a4a4a; /* Dark gray for select box */
+  color: #ffffff; /* White text */
+  border: 2px solid #00bfff; /* Light blue border */
   border-radius: 8px;
-  box-shadow: 0 0 10px #00ff85;
-}
-
-input[type="text"] {
-  padding: 12px;
-  width: 100%;
-  background-color: #1a1a1a;
-  color: #ffffff;
-  border: 2px solid #4d4d4d;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  box-shadow: 0 0 10px #4d4d4d;
-}
-
-input[type="text"]:focus {
-  border-color: #ffffff;
-  box-shadow: 0 0 10px #ffffff;
-}
-
-button {
-  background-color: #4d4d4d;
-  border: 2px solid #4d4d4d;
-}
-
-button:hover {
-  background-color: #6e6e6e;
-  border-color: #ffffff;
-  box-shadow: 0 0 10px #ffffff;
+  box-shadow: 0 0 10px #00bfff; /* Blue glow */
 }
 
 @media (max-width: 768px) {
