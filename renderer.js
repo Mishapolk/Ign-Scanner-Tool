@@ -39,7 +39,7 @@ function populateUsernameLength() {
 // Run the function to populate the dropdown on page load
 populateUsernameLength();
 
-// Single Username Lookup Function (Unchanged, but for individual requests)
+// Single Username Lookup Function
 function checkUsername() {
   const username = usernameInput.value.trim();
   if (username.length === 0 || username.length > 16) {
@@ -101,32 +101,7 @@ function fetchWithRetry(url, delay = 1000) {
   });
 }
 
-// Function to perform a bulk request
-async function bulkCheckUsernames(usernames) {
-  const proxyUrl = "https://web-production-787c.up.railway.app/";
-  const apiUrl = `https://api.minecraftservices.com/minecraft/profile/lookup/bulk/byname`;
-  
-  try {
-    const response = await fetch(proxyUrl + apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(usernames),
-    });
-    
-    if (!response.ok) {
-      throw new Error("Failed to fetch bulk data");
-    }
-
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    return { error };
-  }
-}
-
-// Scan Function using Bulk Checking
+// Scan Function
 async function launchScan() {
   if (scanning) {
     errorMessage.textContent = "A scan is already in progress.";
@@ -205,11 +180,13 @@ async function launchScan() {
   launchScanButton.classList.remove('active');
   launchScanButton.classList.add('flat');
 
-  scanNextUsernameBatch(includeClaimed);
+  scanNextUsername(includeClaimed);
 }
 
-// Scan Next Username Function using batches of 10
-async function scanNextUsernameBatch(includeClaimed) {
+launchScanButton.addEventListener('click', launchScan);
+
+// Scan Next Username Function
+async function scanNextUsername(includeClaimed) {
   if (!scanning || paused || scanData.scanned >= scanData.total) {
     if (scanData.scanned >= scanData.total) {
       // Scan complete
@@ -237,46 +214,67 @@ async function scanNextUsernameBatch(includeClaimed) {
     return;
   }
 
-  // Collect up to 10 usernames
-  let usernamesBatch = [];
-  for (let i = 0; i < 10 && scanData.scanned < scanData.total; i++) {
-    const { value: username, done } = scanData.generator.next();
-    if (done) break;
-    usernamesBatch.push(username);
+  const { value: username, done } = scanData.generator.next();
+
+  if (done) {
+    // Scan complete
+    scanning = false;
+    pauseScanButton.disabled = true;
+    stopScanButton.disabled = true;
+    warningMessage.textContent = "Scan complete.";
+
+    // Animate buttons back to "2D"
+    pauseScanButton.classList.add('flat');
+    pauseScanButton.classList.remove('active');
+    stopScanButton.classList.add('flat');
+    stopScanButton.classList.remove('active');
+
+    // Re-enable Launch Scan button
+    launchScanButton.disabled = false;
+    launchScanButton.classList.remove('flat');
+    launchScanButton.classList.add('active');
+
+    // Re-enable individual username search
+    checkButton.disabled = false;
+    checkButton.classList.remove('flat');
+    checkButton.classList.add('active');
+    return;
   }
 
-  // Send the batch for bulk checking
-  const bulkResult = await bulkCheckUsernames(usernamesBatch);
+  const proxyUrl = "https://web-production-787c.up.railway.app/";
+  const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
 
-  if (bulkResult.error) {
-    outputDiv.innerHTML += `<span class="error">Error: Failed to check batch</span>`;
-  } else {
-    const claimedUsernames = new Set(bulkResult.map(user => user.name.toLowerCase()));
+  try {
+    const data = await fetchWithRetry(proxyUrl + apiUrl);
 
-    // Display the results
-    for (let username of usernamesBatch) {
-      if (claimedUsernames.has(username.toLowerCase())) {
-        if (includeClaimed) {
-          const userId = bulkResult.find(user => user.name.toLowerCase() === username.toLowerCase()).id;
-          outputDiv.innerHTML += `<span class="claimed">${username} is claimed - ${userId}</span>`;
-        }
-      } else {
-        outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
+    if (data === null) {
+      // Username is available
+      outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
+    } else if (data && data.id) {
+      if (includeClaimed) {
+        // Username is claimed
+        outputDiv.innerHTML += `<span class="claimed">${username} is claimed - ${data.id}</span>`;
       }
+      // If includeClaimed is not checked, do not display claimed usernames
     }
+
+    scanData.scanned++;
+    updateProgress();
+
+    // Scroll to bottom to show the latest result
+    outputDiv.scrollTop = outputDiv.scrollHeight;
+
+    // Proceed to the next username asynchronously to keep the UI responsive
+    setTimeout(() => scanNextUsername(includeClaimed), 0);
+  } catch (error) {
+    // This catch block should rarely be reached due to retries in fetchWithRetry
+    scanData.scanned++;
+    updateProgress();
+    setTimeout(() => scanNextUsername(includeClaimed), 0);
   }
-
-  scanData.scanned += usernamesBatch.length;
-  updateProgress();
-
-  // Scroll to bottom to show the latest result
-  outputDiv.scrollTop = outputDiv.scrollHeight;
-
-  // Proceed to the next batch asynchronously to keep the UI responsive
-  setTimeout(() => scanNextUsernameBatch(includeClaimed), 0);
 }
 
-// Update Progress Function (Unchanged from previous)
+// Update Progress Function
 function updateProgress() {
   const progress = (scanData.scanned / scanData.total) * 100;
   progressBarInner.style.width = `${progress}%`;
@@ -302,7 +300,7 @@ function updateProgress() {
   estimatedTimeLabel.textContent = `Estimated time: ${formattedETA}`;
 }
 
-// Format Time Function (Unchanged)
+// Format Time Function
 function formatTime(seconds) {
   if (seconds < 0 || isNaN(seconds)) {
     return '0h 0m 0s';
@@ -314,7 +312,7 @@ function formatTime(seconds) {
   return `${hours}h ${minutes}m ${sec}s`;
 }
 
-// Pause and Resume Functions (Unchanged)
+// Pause and Resume Functions
 function pauseScan() {
   paused = true;
   pauseScanButton.textContent = 'Resume';
@@ -325,7 +323,7 @@ function resumeScan() {
   paused = false;
   pauseScanButton.textContent = 'Pause';
   warningMessage.textContent = "Scan resumed.";
-  scanNextUsernameBatch(includeClaimedCheckbox.checked);
+  scanNextUsername(includeClaimedCheckbox.checked);
 }
 
 pauseScanButton.addEventListener('click', () => {
@@ -333,7 +331,7 @@ pauseScanButton.addEventListener('click', () => {
   else pauseScan();
 });
 
-// Stop Scan Function (Unchanged)
+// Stop Scan Function
 function stopScan() {
   scanning = false;
   paused = false;
@@ -364,7 +362,7 @@ function stopScan() {
 
 stopScanButton.addEventListener('click', stopScan);
 
-// Generate Usernames Generator Function (Unchanged)
+// Generate Usernames Generator Function
 function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
   let chars = [];
   if (includeLetters) chars = chars.concat('abcdefghijklmnopqrstuvwxyz'.split(''));
@@ -392,7 +390,7 @@ function generateUsernames(length, includeLetters, includeNumbers, includeUnders
   return generator();
 }
 
-// Estimate Total Usernames Function (Unchanged)
+// Estimate Total Usernames Function
 function estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
   let charsCount = 0;
   if (includeLetters) charsCount += 26;
@@ -401,7 +399,7 @@ function estimateTotalUsernames(length, includeLetters, includeNumbers, includeU
   return Math.pow(charsCount, length);
 }
 
-// Save Output Function (Unchanged)
+// Save Output Function
 function saveOutput() {
   const content = outputDiv.innerText;
   if (content.trim() === '') {
