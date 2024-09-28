@@ -168,6 +168,9 @@ async function launchScan() {
   scanNextUsername(includeClaimed);
 }
 
+launchScanButton.addEventListener('click', launchScan);
+
+// Scan Next Username Function
 async function scanNextUsername(includeClaimed) {
   if (!scanning || paused || scanData.scanned >= scanData.total) {
     if (scanData.scanned >= scanData.total) {
@@ -236,6 +239,7 @@ async function scanNextUsername(includeClaimed) {
   }
 }
 
+// Update Progress Function
 function updateProgress() {
   const progress = (scanData.scanned / scanData.total) * 100;
   progressBarInner.style.width = `${progress}%`;
@@ -261,6 +265,7 @@ function updateProgress() {
   estimatedTimeLabel.textContent = `Estimated time: ${formattedETA}`;
 }
 
+// Format Time Function
 function formatTime(seconds) {
   if (seconds < 0 || isNaN(seconds)) {
     return '0h 0m 0s';
@@ -272,7 +277,7 @@ function formatTime(seconds) {
   return `${hours}h ${minutes}m ${sec}s`;
 }
 
-// Pause and Stop Functions
+// Pause and Resume Functions
 function pauseScan() {
   paused = true;
   pauseScanButton.textContent = 'Resume';
@@ -292,6 +297,7 @@ pauseScanButton.addEventListener('click', () => {
   else pauseScan();
 });
 
+// Stop Scan Function
 function stopScan() {
   scanning = false;
   paused = false;
