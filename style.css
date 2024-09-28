@@ -191,7 +191,7 @@ button.active:hover {
 
 /* Output Section */
 .output-section {
-  /* Removed overflow to eliminate outer scrolling */
+  /* No additional styles needed */
 }
 
 .output {
@@ -225,13 +225,15 @@ button.active:hover {
   color: #ff4d4d; /* Red color for errors */
 }
 
-/* Save Output Section */
-.save-output-section {
-  margin-top: 30px;
-  text-align: center;
+/* Save Output Wrapper */
+.save-output-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 15px;
 }
 
-.save-output-section button {
+.save-output-wrapper button {
   padding: 12px 25px;
   background-color: #1e1e1e; /* Dark background inside the button */
   border: 2px solid transparent; /* Initial border */
@@ -243,16 +245,16 @@ button.active:hover {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
-.save-output-section button:hover {
+.save-output-wrapper button:hover {
   background-color: #333333; /* Slightly lighter on hover */
   transform: translateY(-2px);
 }
 
-.save-output-section button:active {
+.save-output-wrapper button:active {
   transform: translateY(0);
 }
 
-.save-output-section button:disabled {
+.save-output-wrapper button:disabled {
   background-color: #1e1e1e; /* Same as inside color */
   border: 2px solid #555555; /* Dark gray border for disabled state */
   color: #999999; /* Lighter text color for disabled state */
@@ -261,13 +263,17 @@ button.active:hover {
 }
 
 /* Button States for Flat and Active Appearance */
-.save-output-section button.flat {
+.save-output-wrapper button.flat {
   box-shadow: none;
   transform: none;
 }
 
-.save-output-section button.active {
+.save-output-wrapper button.active {
   border-color: #00bfff; /* Blue outline for active buttons */
+}
+
+.save-output-wrapper button.active:hover {
+  background-color: #333333; /* Maintain hover effect */
 }
 
 /* Save Output Button Specific Styles */
@@ -348,5 +354,9 @@ input[type="checkbox"] {
   .progress-text {
     margin-left: 0;
     margin-top: 10px;
+  }
+
+  .save-output-wrapper {
+    justify-content: center;
   }
 }
