@@ -125,6 +125,11 @@ button.active:hover {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 191, 255, 0.5);
 }
 
+/* Specific Styles for Disabled "Launch Scan" Button */
+button#launch-scan:disabled {
+  border: 2px solid #555555; /* Dark gray border */
+}
+
 /* Scan Settings Section */
 .scan-settings {
   display: flex;
@@ -228,9 +233,9 @@ button.active:hover {
 /* Save Output Wrapper */
 .save-output-wrapper {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start; /* Align to the left */
   align-items: center;
-  margin-top: 15px;
+  margin-top: 15px; /* Padding between output box and button */
 }
 
 .save-output-wrapper button {
@@ -286,9 +291,10 @@ button.active:hover {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 191, 255, 0.5);
 }
 
-/* Specific Styles for Disabled "Launch Scan" Button */
-button#launch-scan:disabled {
-  border: 2px solid #555555; /* Dark gray border */
+.save-message {
+  margin-left: 10px; /* Distance between button and message text */
+  font-size: 0.95rem;
+  color: #00ff85; /* Green color for success messages */
 }
 
 /* Message Styling */
@@ -362,6 +368,6 @@ input[type="checkbox"] {
   }
 
   .save-output-wrapper {
-    justify-content: center;
+    justify-content: flex-start; /* Align to the left on smaller screens */
   }
 }
