@@ -15,8 +15,8 @@ body {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
-  overflow: hidden;
+  align-items: flex-start; /* Changed to flex-start to allow scrolling */
+  overflow-y: auto; /* Enable vertical scrolling */
 }
 
 .container {
@@ -75,12 +75,12 @@ input[type="text"]:focus {
 button {
   padding: 12px 25px;
   background-color: #3a3a3a; /* Medium gray background */
-  border: none;
+  border: 2px solid transparent;
   color: #ffffff;
   font-size: 1rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -99,15 +99,25 @@ button:disabled {
   box-shadow: none;
 }
 
-/* Button States for 2D and 3D Appearance */
+/* Button States for 2D and Active Appearance */
 button.flat {
   box-shadow: none;
   transform: none;
 }
 
-button.glow {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 10px #00bfff;
-  transform: translateY(-2px);
+button.active {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  border-color: #00bfff; /* Blue outline for active buttons */
+}
+
+/* Launch Scan Button Specific Styles */
+#launch-scan.flat {
+  border: 2px solid transparent;
+}
+
+#launch-scan.active {
+  border: 2px solid #00bfff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 191, 255, 0.5);
 }
 
 /* Scan Settings Section */
@@ -175,6 +185,11 @@ button.glow {
 }
 
 /* Output Section */
+.output-section {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
 .output {
   margin-top: 40px;
   padding: 20px;
@@ -215,12 +230,12 @@ button.glow {
 .save-output-section button {
   padding: 12px 25px;
   background-color: #3a3a3a; /* Medium gray */
-  border: none;
+  border: 2px solid transparent;
   color: #ffffff;
   font-size: 1rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -239,22 +254,25 @@ button.glow {
   box-shadow: none;
 }
 
-/* Button States for 2D and 3D Appearance */
+/* Button States for 2D and Active Appearance */
 .save-output-section button.flat {
   box-shadow: none;
   transform: none;
 }
 
-.save-output-section button.glow {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 10px #00bfff;
-  transform: translateY(-2px);
+.save-output-section button.active {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  border-color: #00bfff; /* Blue outline for active buttons */
 }
 
-.save-output-section span {
-  display: block;
-  margin-top: 10px;
-  font-size: 0.95rem;
-  color: #00ff85; /* Green color for success messages */
+/* Save Output Button Specific Styles */
+#save-output.flat {
+  border: 2px solid transparent;
+}
+
+#save-output.active {
+  border: 2px solid #00bfff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 191, 255, 0.5);
 }
 
 /* Message Styling */
