@@ -1,3 +1,6 @@
+/* Import Source Code Pro Font */
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600;700&display=swap');
+
 /* Reset some basic elements */
 * {
   margin: 0;
@@ -7,7 +10,7 @@
 
 body {
   background-color: #121212; /* Deep black background */
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Source Code Pro', monospace; /* Applied font */
   color: #e0e0e0; /* Light gray text for better contrast */
   min-height: 100vh;
   display: flex;
@@ -77,7 +80,7 @@ button {
   font-size: 1rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -93,6 +96,18 @@ button:active {
 button:disabled {
   background-color: #888888; /* Disabled state gray */
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Button States for 2D and 3D Appearance */
+button.flat {
+  box-shadow: none;
+  transform: none;
+}
+
+button.glow {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 10px #00bfff;
+  transform: translateY(-2px);
 }
 
 /* Scan Settings Section */
@@ -125,6 +140,7 @@ button:disabled {
   color: #ffcc00; /* Amber color for warnings */
   font-size: 0.95rem;
   margin-top: 10px;
+  text-align: center;
 }
 
 /* Progress Bar Section */
@@ -137,7 +153,7 @@ button:disabled {
 
 .progress-bar {
   background-color: #333333; /* Dark gray for progress bar background */
-  width: 80%;
+  width: 80%; /* Fixed size */
   border-radius: 8px;
   height: 25px;
   overflow: hidden;
@@ -173,7 +189,7 @@ button:disabled {
 
 .output span {
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 12px; /* Reduced spacing */
   font-size: 1rem;
 }
 
@@ -191,7 +207,7 @@ button:disabled {
   font-size: 1rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -207,6 +223,18 @@ button:disabled {
 .save-output-section button:disabled {
   background-color: #888888; /* Disabled state gray */
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Button States for 2D and 3D Appearance */
+.save-output-section button.flat {
+  box-shadow: none;
+  transform: none;
+}
+
+.save-output-section button.glow {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 10px #00bfff;
+  transform: translateY(-2px);
 }
 
 .save-output-section span {
@@ -238,7 +266,31 @@ button:disabled {
   text-align: center;
 }
 
-/* Responsive Design */
+/* Select Box and Checkboxes Styling */
+select {
+  padding: 10px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  background-color: #4a4a4a; /* Dark gray for select box */
+  color: #ffffff; /* White text */
+  border: 2px solid #00bfff; /* Light blue border */
+  border-radius: 8px;
+  box-shadow: 0 0 10px #00bfff; /* Blue glow */
+  appearance: none; /* Remove default arrow */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23ffffff" d="M6 9l5-5H1z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 12px;
+}
+
+input[type="checkbox"] {
+  transform: scale(1.2);
+  margin-right: 8px;
+  accent-color: #00bfff; /* Light blue for checkbox */
+}
+
 @media (max-width: 768px) {
   .scan-settings {
     flex-direction: column;
@@ -247,6 +299,10 @@ button:disabled {
 
   .options-left {
     max-width: 100%;
+  }
+
+  .buttons-row {
+    justify-content: center;
   }
 
   .progress-section {
