@@ -6,7 +6,7 @@
 }
 
 body {
-  background-color: #0b0b0b;
+  background-color: #0b0b0b; /* Dark background */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #ffffff;
   min-height: 100vh;
@@ -53,12 +53,12 @@ h1 {
 .navbar ul li a {
   text-decoration: none;
   font-size: 1.2rem;
-  color: #00ff85;
+  color: #d1d1d1; /* Light grey for links */
   transition: color 0.3s;
 }
 
 .navbar ul li a:hover {
-  color: #00bfff;
+  color: #ffffff; /* White on hover */
 }
 
 .main-content {
@@ -71,13 +71,12 @@ h1 {
   font-weight: bold;
   color: #ffffff;
   text-transform: uppercase;
-  text-shadow: 0 0 15px #00ff85, 0 0 25px #00ff85, 0 0 40px #00ff85;
+  text-shadow: none; /* No neon glow */
   margin-bottom: 40px;
 }
 
 .text-content h2 .highlight {
-  color: #00ff85;
-  text-shadow: 0 0 15px #00ff85, 0 0 25px #00ff85, 0 0 40px #00ff85;
+  color: #d1d1d1; /* Light grey highlight */
 }
 
 .buttons {
@@ -89,21 +88,20 @@ h1 {
 
 .button {
   padding: 15px 40px;
-  background-color: #1a1a1a;
+  background-color: #333; /* Dark grey */
   color: #ffffff;
   text-decoration: none;
   font-size: 1.2rem;
-  border: 2px solid #00ff85;
+  border: 2px solid #d1d1d1; /* Light grey border */
   border-radius: 8px;
   text-transform: uppercase;
   transition: all 0.3s ease;
-  box-shadow: 0 0 10px #00ff85, 0 0 20px #00ff85, 0 0 30px #00ff85;
+  box-shadow: none;
 }
 
 .button:hover {
-  background-color: #00ff85;
-  color: #0b0b0b;
-  box-shadow: 0 0 15px #00ff85, 0 0 30px #00ff85, 0 0 45px #00ff85;
+  background-color: #d1d1d1; /* Light grey background */
+  color: #0b0b0b; /* Dark text on hover */
 }
 
 .progress-section {
@@ -114,7 +112,7 @@ h1 {
 }
 
 .progress-bar {
-  background-color: #333;
+  background-color: #333; /* Dark grey */
   width: 80%;
   border-radius: 8px;
   height: 25px;
@@ -124,21 +122,21 @@ h1 {
 
 .progress-bar-inner {
   height: 100%;
-  background: linear-gradient(90deg, #00ff85, #00bfff);
+  background: linear-gradient(90deg, #00ff85, #00bfff); /* Neon progress bar */
   width: 0%;
   transition: width 0.4s ease;
 }
 
 .progress-text {
   font-size: 1.5rem;
-  color: #00ff85;
+  color: #ffffff; /* White text */
   margin-left: 20px;
 }
 
 .output {
   margin-top: 40px;
   padding: 20px;
-  background-color: #1a1a1a;
+  background-color: #1a1a1a; /* Dark grey for output */
   color: #ffffff;
   height: 300px;
   overflow-y: auto;
@@ -183,11 +181,11 @@ select {
   padding: 10px;
   margin-top: 15px;
   margin-bottom: 15px;
-  background-color: #1a1a1a;
+  background-color: #1a1a1a; /* Dark grey dropdown */
   color: #ffffff;
-  border: 2px solid #00ff85;
+  border: 2px solid #00ff85; /* Neon green border */
   border-radius: 8px;
-  box-shadow: 0 0 10px #00ff85;
+  box-shadow: 0 0 10px #00ff85; /* Neon green shadow */
 }
 
 @media (max-width: 768px) {
