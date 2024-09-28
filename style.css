@@ -193,6 +193,19 @@ button.glow {
   font-size: 1rem;
 }
 
+/* Specific Classes for Output */
+.available {
+  color: #00ff85; /* Green color for available usernames */
+}
+
+.claimed {
+  color: #ff4d4d; /* Red color for claimed usernames */
+}
+
+.error {
+  color: #ff4d4d; /* Red color for errors */
+}
+
 /* Save Output Section */
 .save-output-section {
   margin-top: 30px;
@@ -273,9 +286,9 @@ select {
   margin-bottom: 15px;
   background-color: #4a4a4a; /* Dark gray for select box */
   color: #ffffff; /* White text */
-  border: 2px solid #00bfff; /* Light blue border */
+  border: 2px solid #888888; /* Changed to gray */
   border-radius: 8px;
-  box-shadow: 0 0 10px #00bfff; /* Blue glow */
+  box-shadow: 0 0 5px #888888; /* Reduced blur and changed color to gray */
   appearance: none; /* Remove default arrow */
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -288,7 +301,7 @@ select {
 input[type="checkbox"] {
   transform: scale(1.2);
   margin-right: 8px;
-  accent-color: #00bfff; /* Light blue for checkbox */
+  accent-color: #888888; /* Changed to gray */
 }
 
 @media (max-width: 768px) {
