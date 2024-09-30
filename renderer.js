@@ -180,97 +180,102 @@ async function launchScan() {
   launchScanButton.classList.remove('active');
   launchScanButton.classList.add('flat');
 
-  scanNextUsername(includeClaimed);
+  scanBulkUsernames(includeClaimed);
 }
 
-launchScanButton.addEventListener('click', launchScan);
+// Bulk Username Scan Function
+async function scanBulkUsernames(includeClaimed) {
+  const usernamesBatch = [];
+  let done = false;
 
-// Scan Next Username Function
-async function scanNextUsername(includeClaimed) {
-  if (!scanning || paused || scanData.scanned >= scanData.total) {
-    if (scanData.scanned >= scanData.total) {
-      // Scan complete
-      scanning = false;
-      pauseScanButton.disabled = true;
-      stopScanButton.disabled = true;
-      warningMessage.textContent = "Scan complete.";
-
-      // Animate buttons back to "2D"
-      pauseScanButton.classList.add('flat');
-      pauseScanButton.classList.remove('active');
-      stopScanButton.classList.add('flat');
-      stopScanButton.classList.remove('active');
-
-      // Re-enable Launch Scan button
-      launchScanButton.disabled = false;
-      launchScanButton.classList.remove('flat');
-      launchScanButton.classList.add('active');
-
-      // Re-enable individual username search
-      checkButton.disabled = false;
-      checkButton.classList.remove('flat');
-      checkButton.classList.add('active');
+  // Collect up to 10 usernames at a time
+  while (!done && usernamesBatch.length < 10) {
+    const { value: username, done: generatorDone } = scanData.generator.next();
+    done = generatorDone;
+    if (!generatorDone) {
+      usernamesBatch.push(username);
     }
+  }
+
+  if (usernamesBatch.length === 0) {
+    // If no usernames are left to process, complete the scan
+    completeScan();
     return;
   }
 
-  const { value: username, done } = scanData.generator.next();
-
-  if (done) {
-    // Scan complete
-    scanning = false;
-    pauseScanButton.disabled = true;
-    stopScanButton.disabled = true;
-    warningMessage.textContent = "Scan complete.";
-
-    // Animate buttons back to "2D"
-    pauseScanButton.classList.add('flat');
-    pauseScanButton.classList.remove('active');
-    stopScanButton.classList.add('flat');
-    stopScanButton.classList.remove('active');
-
-    // Re-enable Launch Scan button
-    launchScanButton.disabled = false;
-    launchScanButton.classList.remove('flat');
-    launchScanButton.classList.add('active');
-
-    // Re-enable individual username search
-    checkButton.disabled = false;
-    checkButton.classList.remove('flat');
-    checkButton.classList.add('active');
-    return;
-  }
-
+  // Make the bulk API request
   const proxyUrl = "https://web-production-787c.up.railway.app/";
-  const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
+  const apiUrl = `https://api.minecraftservices.com/minecraft/profile/lookup/bulk/byname`;
+  const headers = { 'Content-Type': 'application/json' };
 
   try {
-    const data = await fetchWithRetry(proxyUrl + apiUrl);
+    const response = await fetch(proxyUrl + apiUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(usernamesBatch),
+    });
 
-    if (data === null) {
-      // Username is available
-      outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
-    } else if (data && data.id) {
-      if (includeClaimed) {
-        // Username is claimed
-        outputDiv.innerHTML += `<span class="claimed">${username} is claimed - ${data.id}</span>`;
-      }
+    if (!response.ok) {
+      throw new Error('Bulk request failed');
     }
 
-    scanData.scanned++;
+    const data = await response.json();
+    const claimedUsernames = data.map((user) => user.name.toLowerCase());
+
+    // Process the result and update the UI
+    usernamesBatch.forEach((username) => {
+      if (claimedUsernames.includes(username.toLowerCase())) {
+        const userInfo = data.find((user) => user.name.toLowerCase() === username.toLowerCase());
+        if (includeClaimed) {
+          outputDiv.innerHTML += `<span class="claimed">${username} is claimed - ${userInfo.id}</span>`;
+        }
+      } else {
+        outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
+      }
+    });
+
+    scanData.scanned += usernamesBatch.length;
     updateProgress();
 
     // Scroll to bottom to show the latest result
     outputDiv.scrollTop = outputDiv.scrollHeight;
 
-    // This ensures that each iteration is processed individually
-    setTimeout(() => scanNextUsername(includeClaimed), 0);
+    // Proceed to the next batch of usernames
+    if (!paused && scanning) {
+      setTimeout(() => scanBulkUsernames(includeClaimed), 0);
+    }
   } catch (error) {
-    // Retry on error
-    scanData.scanned++;
+    // Retry in case of failure
+    scanData.scanned += usernamesBatch.length;
     updateProgress();
-    setTimeout(() => scanNextUsername(includeClaimed), 0);
+    if (!paused && scanning) {
+      setTimeout(() => scanBulkUsernames(includeClaimed), 0);
+    }
   }
+}
+
+// Complete Scan Function
+function completeScan() {
+  scanning = false;
+  pauseScanButton.disabled = true;
+  stopScanButton.disabled = true;
+  warningMessage.textContent = "Scan complete.";
+
+  // Animate buttons back to "2D"
+  pauseScanButton.classList.add('flat');
+  pauseScanButton.classList.remove('active');
+  stopScanButton.classList.add('flat');
+  stopScanButton.classList.remove('active');
+
+  // Re-enable Launch Scan button
+  launchScanButton.disabled = false;
+  launchScanButton.classList.remove('flat');
+  launchScanButton.classList.add('active');
+
+  // Re-enable individual username search
+  checkButton.disabled = false;
+  checkButton.classList.remove('flat');
+  checkButton.classList.add('active');
 }
 
 // Update Progress Function
@@ -322,7 +327,7 @@ function resumeScan() {
   paused = false;
   pauseScanButton.textContent = 'Pause';
   warningMessage.textContent = "Scan resumed.";
-  scanNextUsername(includeClaimedCheckbox.checked);
+  scanBulkUsernames(includeClaimedCheckbox.checked);
 }
 
 pauseScanButton.addEventListener('click', () => {
