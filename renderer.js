@@ -23,6 +23,9 @@ let scanData = {};
 let totalPausedTime = 0;
 let pauseStartTime = 0;
 
+const proxyUrl = "https://web-production-787c.up.railway.app/";
+const bulkApiUrl = `${proxyUrl}https://api.minecraftservices.com/minecraft/profile/lookup/bulk/byname`;
+
 // Populate username length options (1 to 16) and set default to 3
 function populateUsernameLength() {
   for (let i = 1; i <= 16; i++) {
@@ -36,10 +39,8 @@ function populateUsernameLength() {
   }
 }
 
-// Run the function to populate the dropdown on page load
 populateUsernameLength();
 
-// Single Username Lookup Function
 function checkUsername() {
   const username = usernameInput.value.trim();
   if (username.length === 0 || username.length > 16) {
@@ -53,7 +54,6 @@ function checkUsername() {
   errorMessage.textContent = "";
   outputDiv.innerHTML = "";
 
-  const proxyUrl = "https://web-production-787c.up.railway.app/";
   const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
 
   fetchWithRetry(proxyUrl + apiUrl)
@@ -73,7 +73,7 @@ function checkUsername() {
 
 checkButton.addEventListener('click', checkUsername);
 
-// Fetch with Retry Function (Retries indefinitely until success)
+// Retry function
 function fetchWithRetry(url, delay = 1000) {
   return new Promise((resolve) => {
     function attempt() {
@@ -88,12 +88,10 @@ function fetchWithRetry(url, delay = 1000) {
           } else if (data && data.id) {
             resolve(data); // Username claimed
           } else {
-            // Retry on unexpected data
             setTimeout(attempt, delay);
           }
         })
         .catch(() => {
-          // Retry on network error or rate limit
           setTimeout(attempt, delay);
         });
     }
@@ -101,7 +99,7 @@ function fetchWithRetry(url, delay = 1000) {
   });
 }
 
-// Scan Function
+// Launch scan
 async function launchScan() {
   if (scanning) {
     errorMessage.textContent = "A scan is already in progress.";
@@ -116,10 +114,9 @@ async function launchScan() {
   const includeLetters = includeLettersCheckbox.checked;
   const includeNumbers = includeNumbersCheckbox.checked;
   const includeUnderscore = includeUnderscoreCheckbox.checked;
-  const length = parseInt(usernameLengthSelect.value); // Get the selected value
+  const length = parseInt(usernameLengthSelect.value);
   const includeClaimed = includeClaimedCheckbox.checked;
 
-  // Warning for large scans
   if (length > 5) {
     warningMessage.textContent = "Warning: Scanning usernames longer than 5 characters may take a significant amount of time and resources.";
   } else {
@@ -137,14 +134,6 @@ async function launchScan() {
   }
 
   const totalPossibleUsernames = estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore);
-
-  // Warn the user if the number of usernames is extremely large
-  if (length === 16 && totalPossibleUsernames > 1e+6) { // Example threshold
-    warningMessage.textContent += " Additionally, scanning a very large number of usernames may take a very long time.";
-  }
-
-  errorMessage.textContent = "";
-  // Warning message already set above
 
   const usernameGenerator = generateUsernames(length, includeLetters, includeNumbers, includeUnderscore);
 
@@ -165,17 +154,14 @@ async function launchScan() {
   paused = false;
   totalPausedTime = 0;
 
-  // Update button states
   pauseScanButton.disabled = false;
   stopScanButton.disabled = false;
 
-  // Animate buttons to "Active" state
   pauseScanButton.classList.remove('flat');
   pauseScanButton.classList.add('active');
   stopScanButton.classList.remove('flat');
   stopScanButton.classList.add('active');
 
-  // Make Launch Scan button inactive
   launchScanButton.disabled = true;
   launchScanButton.classList.remove('active');
   launchScanButton.classList.add('flat');
@@ -198,20 +184,14 @@ async function scanBulkUsernames(includeClaimed) {
   }
 
   if (usernamesBatch.length === 0) {
-    // If no usernames are left to process, complete the scan
     completeScan();
     return;
   }
 
-  // Make the bulk API request
-  const proxyUrl = "https://web-production-787c.up.railway.app/";
-  const apiUrl = `https://api.minecraftservices.com/minecraft/profile/lookup/bulk/byname`;
-  const headers = { 'Content-Type': 'application/json' };
-
   try {
-    const response = await fetch(proxyUrl + apiUrl, {
+    const response = await fetch(bulkApiUrl, {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(usernamesBatch),
     });
 
@@ -222,7 +202,6 @@ async function scanBulkUsernames(includeClaimed) {
     const data = await response.json();
     const claimedUsernames = data.map((user) => user.name.toLowerCase());
 
-    // Process the result and update the UI
     usernamesBatch.forEach((username) => {
       if (claimedUsernames.includes(username.toLowerCase())) {
         const userInfo = data.find((user) => user.name.toLowerCase() === username.toLowerCase());
@@ -237,15 +216,12 @@ async function scanBulkUsernames(includeClaimed) {
     scanData.scanned += usernamesBatch.length;
     updateProgress();
 
-    // Scroll to bottom to show the latest result
     outputDiv.scrollTop = outputDiv.scrollHeight;
 
-    // Proceed to the next batch of usernames
     if (!paused && scanning) {
       setTimeout(() => scanBulkUsernames(includeClaimed), 0);
     }
   } catch (error) {
-    // Retry in case of failure
     scanData.scanned += usernamesBatch.length;
     updateProgress();
     if (!paused && scanning) {
@@ -254,57 +230,51 @@ async function scanBulkUsernames(includeClaimed) {
   }
 }
 
-// Complete Scan Function
+// Complete Scan
 function completeScan() {
   scanning = false;
   pauseScanButton.disabled = true;
   stopScanButton.disabled = true;
   warningMessage.textContent = "Scan complete.";
 
-  // Animate buttons back to "2D"
   pauseScanButton.classList.add('flat');
   pauseScanButton.classList.remove('active');
   stopScanButton.classList.add('flat');
   stopScanButton.classList.remove('active');
 
-  // Re-enable Launch Scan button
   launchScanButton.disabled = false;
   launchScanButton.classList.remove('flat');
   launchScanButton.classList.add('active');
 
-  // Re-enable individual username search
   checkButton.disabled = false;
   checkButton.classList.remove('flat');
   checkButton.classList.add('active');
 }
 
-// Update Progress Function
+// Update Progress
 function updateProgress() {
   const progress = (scanData.scanned / scanData.total) * 100;
   progressBarInner.style.width = `${progress}%`;
   progressText.textContent = `${scanData.scanned}/${scanData.total}`;
 
-  // Calculate estimated time remaining
   const now = Date.now();
-  const elapsedTime = (now - scanData.startTime - scanData.pausedTime) / 1000; // in seconds
+  const elapsedTime = (now - scanData.startTime - scanData.pausedTime) / 1000;
   const averageTimePerScan = scanData.scanned > 0 ? elapsedTime / scanData.scanned : 0;
   const estimatedTotalTime = averageTimePerScan * scanData.total;
   const estimatedTimeRemaining = estimatedTotalTime - elapsedTime;
 
-  // Format ETA based on conditions
   let formattedETA = formatTime(estimatedTimeRemaining);
-  if (estimatedTimeRemaining > 36000) { // Above 10 hours
+  if (estimatedTimeRemaining > 36000) {
     const hours = Math.floor(estimatedTimeRemaining / 3600);
     formattedETA = `${hours}h`;
   }
-  if (estimatedTimeRemaining > 3.6e6) { // Above 1000 hours
+  if (estimatedTimeRemaining > 3.6e6) {
     formattedETA = `${(estimatedTimeRemaining / 3.6e6).toExponential(2)}h`;
   }
 
   estimatedTimeLabel.textContent = `Estimated time: ${formattedETA}`;
 }
 
-// Format Time Function
 function formatTime(seconds) {
   if (seconds < 0 || isNaN(seconds)) {
     return '0h 0m 0s';
@@ -316,7 +286,7 @@ function formatTime(seconds) {
   return `${hours}h ${minutes}m ${sec}s`;
 }
 
-// Pause and Resume Functions
+// Pause and Resume Scan
 function pauseScan() {
   paused = true;
   pauseScanButton.textContent = 'Resume';
@@ -335,7 +305,7 @@ pauseScanButton.addEventListener('click', () => {
   else pauseScan();
 });
 
-// Stop Scan Function
+// Stop Scan
 function stopScan() {
   scanning = false;
   paused = false;
@@ -347,18 +317,15 @@ function stopScan() {
   estimatedTimeLabel.textContent = 'Estimated time: 0h 0m 0s';
   warningMessage.textContent = "Scan stopped.";
 
-  // Animate buttons back to "2D"
   pauseScanButton.classList.add('flat');
   pauseScanButton.classList.remove('active');
   stopScanButton.classList.add('flat');
   stopScanButton.classList.remove('active');
 
-  // Re-enable Launch Scan button
   launchScanButton.disabled = false;
   launchScanButton.classList.remove('flat');
   launchScanButton.classList.add('active');
 
-  // Re-enable individual username search
   checkButton.disabled = false;
   checkButton.classList.remove('flat');
   checkButton.classList.add('active');
@@ -366,7 +333,7 @@ function stopScan() {
 
 stopScanButton.addEventListener('click', stopScan);
 
-// Generate Usernames Generator Function
+// Generate Usernames
 function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
   let chars = [];
   if (includeLetters) chars = chars.concat('abcdefghijklmnopqrstuvwxyz'.split(''));
@@ -394,7 +361,6 @@ function generateUsernames(length, includeLetters, includeNumbers, includeUnders
   return generator();
 }
 
-// Estimate Total Usernames Function
 function estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
   let charsCount = 0;
   if (includeLetters) charsCount += 26;
@@ -403,12 +369,12 @@ function estimateTotalUsernames(length, includeLetters, includeNumbers, includeU
   return Math.pow(charsCount, length);
 }
 
-// Save Output Function
+// Save Output
 function saveOutput() {
   const content = outputDiv.innerText;
   if (content.trim() === '') {
     saveMessage.textContent = 'Textbox is empty. Nothing to save.';
-    saveMessage.style.color = '#ff4d4d'; // Red color for error
+    saveMessage.style.color = '#ff4d4d';
     return;
   }
   const currentTime = new Date();
@@ -421,7 +387,7 @@ function saveOutput() {
   downloadLink.click();
 
   saveMessage.textContent = 'Output saved to file!';
-  saveMessage.style.color = '#00ff85'; // Green color for success
+  saveMessage.style.color = '#00ff85';
 }
 
 saveOutputButton.addEventListener('click', saveOutput);
