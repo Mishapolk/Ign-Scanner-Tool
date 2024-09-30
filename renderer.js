@@ -164,7 +164,7 @@ async function launchScan() {
   launchScanButton.classList.remove('active');
   launchScanButton.classList.add('flat');
 
-  scanNextBulk(includeClaimed);
+  await scanNextBulk(includeClaimed);
 }
 
 launchScanButton.addEventListener('click', launchScan);
@@ -220,6 +220,10 @@ async function scanNextBulk(includeClaimed) {
       body: JSON.stringify(usernames)
     });
 
+    if (!response.ok) {
+      throw new Error('Failed to fetch bulk request');
+    }
+
     const data = await response.json();
 
     const claimedNames = new Set(data.map(item => item.name.toLowerCase()));
@@ -244,9 +248,8 @@ async function scanNextBulk(includeClaimed) {
     // Proceed to the next bulk of usernames asynchronously to keep the UI responsive
     setTimeout(() => scanNextBulk(includeClaimed), 0);
   } catch (error) {
-    scanData.scanned += usernames.length;
-    updateProgress();
-    setTimeout(() => scanNextBulk(includeClaimed), 0);
+    console.error('Error with bulk request:', error);
+    setTimeout(() => scanNextBulk(includeClaimed), 0); // Retry
   }
 }
 
@@ -286,6 +289,93 @@ function formatTime(seconds) {
   const minutes = Math.floor(seconds / 60);
   const sec = Math.floor(seconds % 60);
   return `${hours}h ${minutes}m ${sec}s`;
+}
+
+// Pause and Resume Functions
+function pauseScan() {
+  paused = true;
+  pauseScanButton.textContent = 'Resume';
+  warningMessage.textContent = "Scan paused.";
+}
+
+function resumeScan() {
+  paused = false;
+  pauseScanButton.textContent = 'Pause';
+  warningMessage.textContent = "Scan resumed.";
+  scanNextBulk(includeClaimedCheckbox.checked);
+}
+
+pauseScanButton.addEventListener('click', () => {
+  if (paused) resumeScan();
+  else pauseScan();
+});
+
+// Stop Scan Function
+function stopScan() {
+  scanning = false;
+  paused = false;
+  pauseScanButton.disabled = true;
+  stopScanButton.disabled = true;
+  pauseScanButton.textContent = 'Pause';
+  progressBarInner.style.width = '0%';
+  progressText.textContent = '0/0';
+  estimatedTimeLabel.textContent = 'Estimated time: 0h 0m 0s';
+  warningMessage.textContent = "Scan stopped.";
+
+  // Animate buttons back to "2D"
+  pauseScanButton.classList.add('flat');
+  pauseScanButton.classList.remove('active');
+  stopScanButton.classList.add('flat');
+  stopScanButton.classList.remove('active');
+
+  // Re-enable Launch Scan button
+  launchScanButton.disabled = false;
+  launchScanButton.classList.remove('flat');
+  launchScanButton.classList.add('active');
+
+  // Re-enable individual username search
+  checkButton.disabled = false;
+  checkButton.classList.remove('flat');
+  checkButton.classList.add('active');
+}
+
+stopScanButton.addEventListener('click', stopScan);
+
+// Generate Usernames Generator Function
+function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
+  let chars = [];
+  if (includeLetters) chars = chars.concat('abcdefghijklmnopqrstuvwxyz'.split(''));
+  if (includeNumbers) chars = chars.concat('0123456789'.split(''));
+  if (includeUnderscore) chars.push('_');
+
+  if (chars.length === 0) {
+    errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
+    return (function* () {})(); // Empty generator
+  }
+
+  function* generator() {
+    const totalCombinations = Math.pow(chars.length, length);
+    for (let i = 0; i < totalCombinations; i++) {
+      let num = i;
+      let username = '';
+      for (let j = 0; j < length; j++) {
+        username = chars[num % chars.length] + username;
+        num = Math.floor(num / chars.length);
+      }
+      yield username;
+    }
+  }
+
+  return generator();
+}
+
+// Estimate Total Usernames Function
+function estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
+  let charsCount = 0;
+  if (includeLetters) charsCount += 26;
+  if (includeNumbers) charsCount += 10;
+  if (includeUnderscore) charsCount += 1;
+  return Math.pow(charsCount, length);
 }
 
 // Save Output Function (unchanged)
