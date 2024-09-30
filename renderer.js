@@ -22,6 +22,7 @@ let paused = false;
 let scanData = {};
 let totalPausedTime = 0;
 let pauseStartTime = 0;
+const MAX_BULK_SIZE = 10; // Max number of usernames per bulk request
 
 // Populate username length options (1 to 16) and set default to 3
 function populateUsernameLength() {
@@ -39,7 +40,7 @@ function populateUsernameLength() {
 // Run the function to populate the dropdown on page load
 populateUsernameLength();
 
-// Single Username Lookup Function
+// Single Username Lookup Function (remains the same)
 function checkUsername() {
   const username = usernameInput.value.trim();
   if (username.length === 0 || username.length > 16) {
@@ -73,7 +74,7 @@ function checkUsername() {
 
 checkButton.addEventListener('click', checkUsername);
 
-// Fetch with Retry Function (Retries indefinitely until success)
+// Fetch with Retry Function (unchanged)
 function fetchWithRetry(url, delay = 1000) {
   return new Promise((resolve) => {
     function attempt() {
@@ -101,7 +102,7 @@ function fetchWithRetry(url, delay = 1000) {
   });
 }
 
-// Scan Function
+// Launch Scan with Bulk Requests
 async function launchScan() {
   if (scanning) {
     errorMessage.textContent = "A scan is already in progress.";
@@ -119,18 +120,6 @@ async function launchScan() {
   const length = parseInt(usernameLengthSelect.value); // Get the selected value
   const includeClaimed = includeClaimedCheckbox.checked;
 
-  // Warning for large scans
-  if (length > 5) {
-    warningMessage.textContent = "Warning: Scanning usernames longer than 5 characters may take a significant amount of time and resources.";
-  } else {
-    warningMessage.textContent = "";
-  }
-
-  if (length < 1 || length > 16) {
-    errorMessage.textContent = "Username length must be between 1 and 16.";
-    return;
-  }
-
   if (!includeLetters && !includeNumbers && !includeUnderscore) {
     errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
     return;
@@ -138,13 +127,8 @@ async function launchScan() {
 
   const totalPossibleUsernames = estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore);
 
-  // Warn the user if the number of usernames is extremely large
-  if (length === 16 && totalPossibleUsernames > 1e+6) { // Example threshold
-    warningMessage.textContent += " Additionally, scanning a very large number of usernames may take a very long time.";
-  }
-
   errorMessage.textContent = "";
-  // Warning message already set above
+  warningMessage.textContent = "";
 
   const usernameGenerator = generateUsernames(length, includeLetters, includeNumbers, includeUnderscore);
 
@@ -180,13 +164,13 @@ async function launchScan() {
   launchScanButton.classList.remove('active');
   launchScanButton.classList.add('flat');
 
-  scanNextUsername(includeClaimed);
+  scanNextBulk(includeClaimed);
 }
 
 launchScanButton.addEventListener('click', launchScan);
 
-// Scan Next Username Function
-async function scanNextUsername(includeClaimed) {
+// Scan in Bulk of 10 Usernames
+async function scanNextBulk(includeClaimed) {
   if (!scanning || paused || scanData.scanned >= scanData.total) {
     if (scanData.scanned >= scanData.total) {
       // Scan complete
@@ -214,67 +198,59 @@ async function scanNextUsername(includeClaimed) {
     return;
   }
 
-  const { value: username, done } = scanData.generator.next();
+  const usernames = [];
+  for (let i = 0; i < MAX_BULK_SIZE; i++) {
+    const { value: username, done } = scanData.generator.next();
+    if (done) break;
+    usernames.push(username);
+  }
 
-  if (done) {
-    // Scan complete
+  if (usernames.length === 0) {
     scanning = false;
-    pauseScanButton.disabled = true;
-    stopScanButton.disabled = true;
-    warningMessage.textContent = "Scan complete.";
-
-    // Animate buttons back to "2D"
-    pauseScanButton.classList.add('flat');
-    pauseScanButton.classList.remove('active');
-    stopScanButton.classList.add('flat');
-    stopScanButton.classList.remove('active');
-
-    // Re-enable Launch Scan button
-    launchScanButton.disabled = false;
-    launchScanButton.classList.remove('flat');
-    launchScanButton.classList.add('active');
-
-    // Re-enable individual username search
-    checkButton.disabled = false;
-    checkButton.classList.remove('flat');
-    checkButton.classList.add('active');
     return;
   }
 
   const proxyUrl = "https://web-production-787c.up.railway.app/";
-  const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
+  const apiUrl = `https://api.minecraftservices.com/minecraft/profile/lookup/bulk/byname`;
 
   try {
-    const data = await fetchWithRetry(proxyUrl + apiUrl);
+    const response = await fetch(proxyUrl + apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(usernames)
+    });
 
-    if (data === null) {
-      // Username is available
-      outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
-    } else if (data && data.id) {
-      if (includeClaimed) {
-        // Username is claimed
-        outputDiv.innerHTML += `<span class="claimed">${username} is claimed - ${data.id}</span>`;
+    const data = await response.json();
+
+    const claimedNames = new Set(data.map(item => item.name.toLowerCase()));
+
+    usernames.forEach(username => {
+      if (claimedNames.has(username.toLowerCase())) {
+        const profile = data.find(item => item.name.toLowerCase() === username.toLowerCase());
+        if (includeClaimed) {
+          outputDiv.innerHTML += `<span class="claimed">${profile.name} is claimed - ${profile.id}</span>`;
+        }
+      } else {
+        outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
       }
-      // If includeClaimed is not checked, do not display claimed usernames
-    }
+    });
 
-    scanData.scanned++;
+    scanData.scanned += usernames.length;
     updateProgress();
 
     // Scroll to bottom to show the latest result
     outputDiv.scrollTop = outputDiv.scrollHeight;
 
-    // Proceed to the next username asynchronously to keep the UI responsive
-    setTimeout(() => scanNextUsername(includeClaimed), 0);
+    // Proceed to the next bulk of usernames asynchronously to keep the UI responsive
+    setTimeout(() => scanNextBulk(includeClaimed), 0);
   } catch (error) {
-    // This catch block should rarely be reached due to retries in fetchWithRetry
-    scanData.scanned++;
+    scanData.scanned += usernames.length;
     updateProgress();
-    setTimeout(() => scanNextUsername(includeClaimed), 0);
+    setTimeout(() => scanNextBulk(includeClaimed), 0);
   }
 }
 
-// Update Progress Function
+// Update Progress Function (unchanged)
 function updateProgress() {
   const progress = (scanData.scanned / scanData.total) * 100;
   progressBarInner.style.width = `${progress}%`;
@@ -300,7 +276,7 @@ function updateProgress() {
   estimatedTimeLabel.textContent = `Estimated time: ${formattedETA}`;
 }
 
-// Format Time Function
+// Format Time Function (unchanged)
 function formatTime(seconds) {
   if (seconds < 0 || isNaN(seconds)) {
     return '0h 0m 0s';
@@ -312,94 +288,7 @@ function formatTime(seconds) {
   return `${hours}h ${minutes}m ${sec}s`;
 }
 
-// Pause and Resume Functions
-function pauseScan() {
-  paused = true;
-  pauseScanButton.textContent = 'Resume';
-  warningMessage.textContent = "Scan paused.";
-}
-
-function resumeScan() {
-  paused = false;
-  pauseScanButton.textContent = 'Pause';
-  warningMessage.textContent = "Scan resumed.";
-  scanNextUsername(includeClaimedCheckbox.checked);
-}
-
-pauseScanButton.addEventListener('click', () => {
-  if (paused) resumeScan();
-  else pauseScan();
-});
-
-// Stop Scan Function
-function stopScan() {
-  scanning = false;
-  paused = false;
-  pauseScanButton.disabled = true;
-  stopScanButton.disabled = true;
-  pauseScanButton.textContent = 'Pause';
-  progressBarInner.style.width = '0%';
-  progressText.textContent = '0/0';
-  estimatedTimeLabel.textContent = 'Estimated time: 0h 0m 0s';
-  warningMessage.textContent = "Scan stopped.";
-
-  // Animate buttons back to "2D"
-  pauseScanButton.classList.add('flat');
-  pauseScanButton.classList.remove('active');
-  stopScanButton.classList.add('flat');
-  stopScanButton.classList.remove('active');
-
-  // Re-enable Launch Scan button
-  launchScanButton.disabled = false;
-  launchScanButton.classList.remove('flat');
-  launchScanButton.classList.add('active');
-
-  // Re-enable individual username search
-  checkButton.disabled = false;
-  checkButton.classList.remove('flat');
-  checkButton.classList.add('active');
-}
-
-stopScanButton.addEventListener('click', stopScan);
-
-// Generate Usernames Generator Function
-function generateUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
-  let chars = [];
-  if (includeLetters) chars = chars.concat('abcdefghijklmnopqrstuvwxyz'.split(''));
-  if (includeNumbers) chars = chars.concat('0123456789'.split(''));
-  if (includeUnderscore) chars.push('_');
-
-  if (chars.length === 0) {
-    errorMessage.textContent = "You must include at least one of letters, numbers, or underscores.";
-    return (function* () {})(); // Empty generator
-  }
-
-  function* generator() {
-    const totalCombinations = Math.pow(chars.length, length);
-    for (let i = 0; i < totalCombinations; i++) {
-      let num = i;
-      let username = '';
-      for (let j = 0; j < length; j++) {
-        username = chars[num % chars.length] + username;
-        num = Math.floor(num / chars.length);
-      }
-      yield username;
-    }
-  }
-
-  return generator();
-}
-
-// Estimate Total Usernames Function
-function estimateTotalUsernames(length, includeLetters, includeNumbers, includeUnderscore) {
-  let charsCount = 0;
-  if (includeLetters) charsCount += 26;
-  if (includeNumbers) charsCount += 10;
-  if (includeUnderscore) charsCount += 1;
-  return Math.pow(charsCount, length);
-}
-
-// Save Output Function
+// Save Output Function (unchanged)
 function saveOutput() {
   const content = outputDiv.innerText;
   if (content.trim() === '') {
