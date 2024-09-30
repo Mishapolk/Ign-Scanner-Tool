@@ -255,7 +255,6 @@ async function scanNextUsername(includeClaimed) {
         // Username is claimed
         outputDiv.innerHTML += `<span class="claimed">${username} is claimed - ${data.id}</span>`;
       }
-      // If includeClaimed is not checked, do not display claimed usernames
     }
 
     scanData.scanned++;
@@ -264,10 +263,10 @@ async function scanNextUsername(includeClaimed) {
     // Scroll to bottom to show the latest result
     outputDiv.scrollTop = outputDiv.scrollHeight;
 
-    // Proceed to the next username asynchronously to keep the UI responsive
+    // This ensures that each iteration is processed individually
     setTimeout(() => scanNextUsername(includeClaimed), 0);
   } catch (error) {
-    // This catch block should rarely be reached due to retries in fetchWithRetry
+    // Retry on error
     scanData.scanned++;
     updateProgress();
     setTimeout(() => scanNextUsername(includeClaimed), 0);
