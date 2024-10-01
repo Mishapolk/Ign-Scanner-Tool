@@ -18,11 +18,27 @@ const saveOutputButton = document.getElementById('save-output');
 const saveMessage = document.getElementById('save-message');
 const warningMessage = document.getElementById('warning-message');
 
+// State Variables
 let scanning = false;
 let paused = false;
 let scanData = {};
 let totalPausedTime = 0;
 let pauseStartTime = 0;
+
+// Proxy URLs Array
+const proxyUrls = [
+  "https://web-production-99ed.up.railway.app/",
+  "https://web-production-6259f.up.railway.app/",
+  "https://web-production-9824.up.railway.app/",
+  "https://web-production-034d.up.railway.app/",
+  "https://web-production-787c.up.railway.app/"
+];
+
+// Number of concurrent workers (based on the number of proxies)
+const numberOfWorkers = proxyUrls.length;
+
+// Array to hold worker promises
+let workers = [];
 
 // Populate username length options (1 to 16) and set default to 3
 function populateUsernameLength() {
@@ -54,7 +70,7 @@ function checkUsername() {
   errorMessage.textContent = "";
   outputDiv.innerHTML = "";
 
-  const proxyUrl = "https://web-production-787c.up.railway.app/";
+  const proxyUrl = proxyUrls[0]; // Use the first proxy for single checks
   const apiUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
 
   fetchWithRetry(proxyUrl + apiUrl)
@@ -74,7 +90,7 @@ function checkUsername() {
 
 checkButton.addEventListener('click', checkUsername);
 
-// Fetch with Retry Function (Retries indefinitely until success)
+// Fetch with Retry Function for Individual API Calls (Retries indefinitely until success)
 function fetchWithRetry(url, delay = 1000) {
   return new Promise((resolve) => {
     function attempt() {
@@ -102,12 +118,11 @@ function fetchWithRetry(url, delay = 1000) {
   });
 }
 
-// Fetch with Retry Function for Bulk API
-function fetchWithRetryBulk(usernamesBatch, delay = 1000) {
-  const proxyUrl = "https://web-production-787c.up.railway.app/";
+// Fetch with Retry Function for Bulk API (Retries indefinitely until success)
+function fetchWithRetryBulk(usernamesBatch, proxyUrl, delay = 2000) {
   const apiUrl = "https://api.minecraftservices.com/minecraft/profile/lookup/bulk/byname";
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     function attempt() {
       fetch(proxyUrl + apiUrl, {
         method: 'POST',
@@ -136,7 +151,7 @@ function fetchWithRetryBulk(usernamesBatch, delay = 1000) {
   });
 }
 
-// Scan Function
+// Launch Scan Function
 function launchScan() {
   if (scanning) {
     errorMessage.textContent = "A scan is already in progress.";
@@ -215,72 +230,103 @@ function launchScan() {
   launchScanButton.classList.remove('active');
   launchScanButton.classList.add('flat');
 
-  // Start the batch scanning process
-  scanNextUsernamesBatch(includeClaimed);
+  // Start worker functions
+  startWorkers(includeClaimed);
 }
 
 launchScanButton.addEventListener('click', launchScan);
 
-// Scan Next Usernames Batch Function
-async function scanNextUsernamesBatch(includeClaimed) {
-  if (!scanning || paused || scanData.scanned >= scanData.total) {
-    handleScanCompletion();
-    return;
+// Start Worker Functions
+function startWorkers(includeClaimed) {
+  for (let i = 0; i < numberOfWorkers; i++) {
+    const worker = workerFunction(i, includeClaimed);
+    workers.push(worker);
   }
+}
 
-  // Collect up to 10 usernames
-  let batch = [];
+// Worker Function
+async function workerFunction(workerIndex, includeClaimed) {
+  const proxyUrl = proxyUrls[workerIndex % proxyUrls.length];
+  while (scanning) {
+    if (paused) {
+      await waitForResume();
+    }
+
+    // Get next batch of usernames
+    const batch = getNextBatch();
+
+    if (batch.length === 0) {
+      // No more usernames to process
+      handleScanCompletion();
+      break;
+    }
+
+    try {
+      const data = await fetchWithRetryBulk(batch, proxyUrl);
+
+      // Create a set of claimed usernames from the response
+      const claimedUsernamesSet = new Set(data.map((item) => item.name.toLowerCase()));
+
+      batch.forEach((username) => {
+        if (claimedUsernamesSet.has(username.toLowerCase())) {
+          // Username is claimed
+          if (includeClaimed) {
+            outputDiv.innerHTML += `<span class="claimed">${username} is claimed</span>`;
+          }
+        } else {
+          // Username is available
+          outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
+        }
+        scanData.scanned++;
+      });
+
+      updateProgress();
+
+      // Scroll to bottom to show the latest result
+      outputDiv.scrollTop = outputDiv.scrollHeight;
+    } catch (error) {
+      // Handle error (retry is already managed in fetchWithRetryBulk)
+      console.error(`Worker ${workerIndex} encountered an error:`, error);
+    }
+
+    // Wait for 2 seconds before next request from this proxy
+    await delay(2000);
+  }
+}
+
+// Function to Get Next Batch of Usernames (up to 10)
+function getNextBatch() {
+  const batch = [];
   for (let i = 0; i < 10; i++) {
     const { value: username, done } = scanData.generator.next();
     if (done) break;
     batch.push(username);
   }
+  return batch;
+}
 
-  if (batch.length === 0) {
-    handleScanCompletion();
-    return;
-  }
-
-  try {
-    const data = await fetchWithRetryBulk(batch);
-
-    // Create a set of claimed usernames from the response
-    const claimedUsernamesSet = new Set(data.map((item) => item.name.toLowerCase()));
-
-    batch.forEach((username) => {
-      if (claimedUsernamesSet.has(username.toLowerCase())) {
-        // Username is claimed
-        if (includeClaimed) {
-          outputDiv.innerHTML += `<span class="claimed">${username} is claimed</span>`;
-        }
-      } else {
-        // Username is available
-        outputDiv.innerHTML += `<span class="available">${username} is available</span>`;
+// Function to Wait Until Scan is Resumed
+function waitForResume() {
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      if (!paused) {
+        clearInterval(interval);
+        resolve();
       }
-      scanData.scanned++;
-    });
-
-    updateProgress();
-
-    // Scroll to bottom to show the latest result
-    outputDiv.scrollTop = outputDiv.scrollHeight;
-
-    // Continue with the next batch
-    setTimeout(() => scanNextUsernamesBatch(includeClaimed), 0);
-  } catch (error) {
-    // Retry the same batch on error
-    setTimeout(() => scanNextUsernamesBatch(includeClaimed), 0);
-  }
+    }, 500);
+  });
 }
 
 // Handle Scan Completion Function
 function handleScanCompletion() {
+  if (!scanning) return; // Prevent multiple calls
+
   scanning = false;
   pauseScanButton.disabled = true;
   stopScanButton.disabled = true;
   warningMessage.textContent = "Scan complete.";
 
-  // Animate buttons back to "2D"
+  // Animate buttons back to "Flat" state
   pauseScanButton.classList.add('flat');
   pauseScanButton.classList.remove('active');
   stopScanButton.classList.add('flat');
@@ -295,6 +341,9 @@ function handleScanCompletion() {
   checkButton.disabled = false;
   checkButton.classList.remove('flat');
   checkButton.classList.add('active');
+
+  // Clear workers array
+  workers = [];
 }
 
 // Update Progress Function
@@ -348,7 +397,6 @@ function resumeScan() {
   pauseScanButton.textContent = 'Pause';
   warningMessage.textContent = "Scan resumed.";
   totalPausedTime += Date.now() - pauseStartTime;
-  scanNextUsernamesBatch(includeClaimedCheckbox.checked);
 }
 
 pauseScanButton.addEventListener('click', () => {
@@ -368,7 +416,7 @@ function stopScan() {
   estimatedTimeLabel.textContent = 'Estimated time: 0h 0m 0s';
   warningMessage.textContent = "Scan stopped.";
 
-  // Animate buttons back to "2D"
+  // Animate buttons back to "Flat" state
   pauseScanButton.classList.add('flat');
   pauseScanButton.classList.remove('active');
   stopScanButton.classList.add('flat');
@@ -383,6 +431,9 @@ function stopScan() {
   checkButton.disabled = false;
   checkButton.classList.remove('flat');
   checkButton.classList.add('active');
+
+  // Clear workers array
+  workers = [];
 }
 
 stopScanButton.addEventListener('click', stopScan);
@@ -446,3 +497,8 @@ function saveOutput() {
 }
 
 saveOutputButton.addEventListener('click', saveOutput);
+
+// Utility Function to Delay Execution
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
